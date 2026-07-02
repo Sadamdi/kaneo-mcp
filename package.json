@@ -1,10 +1,19 @@
 {
-  "name": "kaneo-mcp",
-  "version": "0.1.0",
-  "description": "MCP server for Kaneo project management — lets AI assistants read and manage projects, tasks, columns, comments, and labels.",
+  "name": "@sadamdi/kaneo-mcp",
+  "version": "0.2.0",
+  "description": "MCP server covering the full Kaneo API — projects, tasks, columns, labels, comments, time entries, notifications, search, and GitHub/Gitea/Discord/Slack/webhook integrations. Supports API key or browser device-flow auth, with an interactive installer for Cursor, Claude Desktop, and Claude Code.",
   "type": "module",
   "bin": {
-    "kaneo-mcp": "dist/index.js"
+    "kaneo-mcp": "dist/cli.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Sadamdi/kaneo-mcp.git"
+  },
+  "homepage": "https://github.com/Sadamdi/kaneo-mcp",
+  "keywords": ["mcp", "model-context-protocol", "kaneo", "project-management"],
+  "publishConfig": {
+    "access": "public"
   },
   "files": [
     "dist"
@@ -12,7 +21,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "start": "node dist/index.js"
+    "start": "node dist/cli.js serve",
+    "prepublishOnly": "npm run build"
   },
   "license": "MIT",
   "engines": {

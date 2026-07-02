@@ -9,62 +9,57 @@ Built against the official [Kaneo API reference](https://kaneo.app/docs/api-refe
 and its OpenAPI spec at `https://cloud.kaneo.app/api/openapi`.
 
 Works with any Kaneo instance — the hosted [cloud.kaneo.app](https://cloud.kaneo.app) or a
-self-hosted deployment — through a personal API key. There's no OAuth flow and no browser
-automation involved; you generate a key once and the server calls Kaneo's REST API with it.
+self-hosted deployment.
 
-## 1. Get your Kaneo API key
+[![Add to Cursor](https://img.shields.io/badge/Cursor-Add%20kaneo--mcp-000000?style=for-the-badge&logo=cursor)](cursor://anysphere.cursor-deeplink/mcp/install?name=kaneo&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBzYWRhbWRpL2thbmVvLW1jcCIsInNlcnZlIl0sImVudiI6e319)
 
-Your sign-in method (Google, GitHub, email, whatever) doesn't matter here. API keys are
-independent of your session and authenticate the same way no matter how you logged in.
+## Quick install
 
-1. Sign in to Kaneo.
-2. Go to **Settings → Account → Developer Settings → API Keys**.
-3. Click **Create API Key**, name it, and copy the value immediately — it's shown once.
+```bash
+npx @sadamdi/kaneo-mcp
+```
 
-## 2. Find your workspace ID
+This opens an interactive setup wizard: pick which client to register (Cursor, Claude Desktop, or
+Claude Code — project or global), and it writes the config for you. No cloning, no manual JSON
+editing.
 
-Most endpoints need a `workspaceId`. It's in the URL when you're inside a workspace:
+If you'd rather set it up by hand, jump to [manual client config](#manual-client-config) below.
+
+## Authentication
+
+Two ways to authenticate, pick whichever fits:
+
+**API key** — sign in to Kaneo, go to **Settings → Account → Developer Settings → API Keys**,
+click **Create API Key**, copy it. Works no matter how you originally signed in (Google, GitHub,
+email) — API keys are independent of your session. Paste it when the installer asks, or set
+`KANEO_API_KEY` yourself.
+
+**Browser sign-in (device flow)** — leave the API key prompt blank. On first use, the server
+prints a URL and a short code to your terminal; open the URL, approve the code, and you're signed
+in. The resulting token is cached at `~/.config/kaneo-mcp/credentials.json` (mode 600) so you only
+do this once per machine.
+
+## Workspace ID
+
+Most tools need a `workspaceId`. It's in the URL when you're inside a workspace:
 
 ```
 https://cloud.kaneo.app/dashboard/workspace/<WORKSPACE_ID>/...
 ```
 
-Set `KANEO_WORKSPACE_ID` so you don't need to pass it on every call. It can still be overridden
-per call for multi-workspace use.
+The installer asks for it and sets `KANEO_WORKSPACE_ID` so you don't have to pass it on every
+call. It can still be overridden per call for multi-workspace setups.
 
-## 3. Install and build
+## Manual client config
 
-```bash
-git clone https://github.com/Sadamdi/kaneo-mcp.git
-cd kaneo-mcp
-npm install
-npm run build
-```
-
-This produces `dist/index.js`, a stdio MCP server.
-
-## 4. Configure your MCP client
-
-Every MCP client needs the same command and environment variables:
-
-- `KANEO_API_KEY` — required
-- `KANEO_WORKSPACE_ID` — optional but recommended
-- `KANEO_BASE_URL` — only for self-hosted Kaneo, defaults to `https://cloud.kaneo.app/api`
-
-### Claude Code
-
-```bash
-claude mcp add kaneo -- node "C:/path/to/kaneo-mcp/dist/index.js"
-```
-
-or in `.mcp.json`:
+Every client uses the same command and environment variables:
 
 ```json
 {
   "mcpServers": {
     "kaneo": {
-      "command": "node",
-      "args": ["C:/path/to/kaneo-mcp/dist/index.js"],
+      "command": "npx",
+      "args": ["-y", "@sadamdi/kaneo-mcp", "serve"],
       "env": {
         "KANEO_API_KEY": "your-api-key-here",
         "KANEO_WORKSPACE_ID": "your-workspace-id"
@@ -74,40 +69,39 @@ or in `.mcp.json`:
 }
 ```
 
-### Claude Desktop
+Drop that block into:
 
-Same block in `claude_desktop_config.json`.
+- **Cursor** — `.cursor/mcp.json` (project) or `~/.cursor/mcp.json` (global)
+- **Claude Desktop** — `claude_desktop_config.json`
+- **Claude Code** — `.mcp.json` in the project root, or `claude mcp add kaneo --env KANEO_API_KEY=your-api-key-here --env KANEO_WORKSPACE_ID=your-workspace-id -- npx -y @sadamdi/kaneo-mcp serve`
+- **Cline** — same block via its "Configure MCP Servers" panel
+- **Codex CLI** — `~/.codex/config.toml`:
+  ```toml
+  [mcp_servers.kaneo]
+  command = "npx"
+  args = ["-y", "@sadamdi/kaneo-mcp", "serve"]
 
-### Cursor
+  [mcp_servers.kaneo.env]
+  KANEO_API_KEY = "your-api-key-here"
+  KANEO_WORKSPACE_ID = "your-workspace-id"
+  ```
 
-Same block in `.cursor/mcp.json`.
+Omit the `env` block entirely to use browser sign-in instead of an API key.
 
-### Cline
+## Set it up by talking to your AI instead
 
-Same block in `cline_mcp_settings.json`.
+Copy this into any AI assistant with terminal or file access (Claude, Cursor, Cline, Codex, etc.):
 
-### Codex CLI
-
-`~/.codex/config.toml`:
-
-```toml
-[mcp_servers.kaneo]
-command = "node"
-args = ["C:/path/to/kaneo-mcp/dist/index.js"]
-
-[mcp_servers.kaneo.env]
-KANEO_API_KEY = "your-api-key-here"
-KANEO_WORKSPACE_ID = "your-workspace-id"
 ```
-
-Any other MCP-capable client follows the same shape: `command: node`, `args: [".../dist/index.js"]`,
-and the same two environment variables.
-
-### Let an AI do this for you
-
-Instead of doing steps 3–4 by hand, paste the contents of [SETUP_PROMPT.md](SETUP_PROMPT.md) into
-your AI assistant along with your API key and workspace ID. It will clone, build, and wire up the
-config file for whichever client you're using.
+Set up the kaneo-mcp MCP server for me. Run `npx @sadamdi/kaneo-mcp` in an interactive
+terminal and follow its prompts (or add an mcpServers entry named "kaneo" with
+command "npx", args ["-y", "@sadamdi/kaneo-mcp", "serve"], to whichever client config
+you detect I'm using — Cursor, Claude Desktop, or Claude Code). My Kaneo API key is
+[PASTE_KEY_HERE] and my workspace ID is [PASTE_WORKSPACE_ID_HERE] — set those as
+KANEO_API_KEY and KANEO_WORKSPACE_ID in the env block. If I didn't give you a key,
+leave the env block without KANEO_API_KEY so I can sign in via browser on first use.
+Tell me to restart the client afterward, then verify by calling the list_projects tool.
+```
 
 ## Available tools (79)
 
@@ -130,24 +124,35 @@ config file for whichever client you're using.
 
 This mirrors every endpoint in the [Kaneo API reference](https://kaneo.app/docs/api-reference/introduction)
 that operates within a workspace context. Organization-level admin endpoints (member/role
-management across an entire organization) are intentionally out of scope for now, since they
-carry a different risk profile than task/project operations.
+management across an entire organization) are intentionally out of scope, since they carry a
+different risk profile than task/project operations.
 
 A typical flow: `search` or `list_projects` to find the target → `list_columns` to see valid
 statuses → `create_task` / `update_task` / `set_task_status` to act.
 
 ## Sharing with teammates
 
-Each person should generate their own API key rather than sharing one. Clone this repo, build it,
-and point your own client config at your own key and workspace ID. If this gets published to npm,
-swap `command`/`args` for `"npx"` / `["-y", "kaneo-mcp"]` and skip the local build step entirely.
+Each person runs `npx @sadamdi/kaneo-mcp` themselves and authenticates with their own API key or
+their own browser sign-in — nobody shares credentials, nobody clones a repo.
 
-Never commit a real API key. `.env` is gitignored — use `.env.example` as a template for local
-testing.
+## Running from source
+
+```bash
+git clone https://github.com/Sadamdi/kaneo-mcp.git
+cd kaneo-mcp
+npm install
+npm run build
+node dist/cli.js serve
+```
+
+Use `"command": "node", "args": ["/absolute/path/to/kaneo-mcp/dist/cli.js", "serve"]` in a client
+config in place of the `npx` line if you build locally instead.
 
 ## Self-hosted Kaneo
 
-Set `KANEO_BASE_URL` to `https://<your-instance>/api`. Nothing else changes.
+Set `KANEO_BASE_URL` to `https://<your-instance>/api`. Device-flow sign-in works against
+self-hosted instances too, as long as the server allows the `kaneo-mcp` client id (it does by
+default).
 
 ## License
 

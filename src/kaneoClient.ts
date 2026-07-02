@@ -1,4 +1,6 @@
 import { config } from "./config.js";
+import { runDeviceAuthorization } from "./auth/deviceFlow.js";
+import { loadCredentials, saveCredentials } from "./auth/tokenStore.js";
 
 export class KaneoApiError extends Error {
   constructor(public status: number, public body: string) {
@@ -7,6 +9,29 @@ export class KaneoApiError extends Error {
 }
 
 type Query = Record<string, string | number | boolean | undefined>;
+
+let cachedToken: string | undefined;
+
+async function resolveToken(): Promise<string> {
+  if (config.apiKey) return config.apiKey;
+  if (cachedToken) return cachedToken;
+
+  const stored = loadCredentials(config.baseUrl);
+  if (stored) {
+    cachedToken = stored.accessToken;
+    return cachedToken;
+  }
+
+  const token = await runDeviceAuthorization(config.baseUrl, (verificationUri, userCode) => {
+    process.stderr.write(
+      `[kaneo-mcp] Sign in to Kaneo: open ${verificationUri} and enter code ${userCode}\n`
+    );
+  });
+
+  cachedToken = token;
+  saveCredentials({ accessToken: token, baseUrl: config.baseUrl, obtainedAt: new Date().toISOString() });
+  return token;
+}
 
 function buildUrl(path: string, query?: Query): string {
   const url = new URL(config.baseUrl + path);
@@ -23,10 +48,11 @@ async function request<T = unknown>(
   path: string,
   opts: { query?: Query; body?: unknown } = {}
 ): Promise<T> {
+  const token = await resolveToken();
   const res = await fetch(buildUrl(path, opts.query), {
     method,
     headers: {
-      Authorization: `Bearer ${config.apiKey}`,
+      Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
     body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,

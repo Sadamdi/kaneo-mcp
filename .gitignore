@@ -2,3 +2,5 @@ node_modules/
 dist/
 .env
 *.log
+npm_recovery_codes.txt
+*recovery_codes*
