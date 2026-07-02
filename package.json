@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Sadamdi/kaneo-mcp.git"
+    "url": "git+https://github.com/Sadamdi/kaneo-mcp.git"
   },
   "homepage": "https://github.com/Sadamdi/kaneo-mcp",
   "keywords": ["mcp", "model-context-protocol", "kaneo", "project-management"],

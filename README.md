@@ -11,7 +11,13 @@ and its OpenAPI spec at `https://cloud.kaneo.app/api/openapi`.
 Works with any Kaneo instance — the hosted [cloud.kaneo.app](https://cloud.kaneo.app) or a
 self-hosted deployment.
 
+[![npm version](https://img.shields.io/npm/v/@sadamdi/kaneo-mcp.svg)](https://www.npmjs.com/package/@sadamdi/kaneo-mcp)
+[![npm downloads](https://img.shields.io/npm/dm/@sadamdi/kaneo-mcp.svg)](https://www.npmjs.com/package/@sadamdi/kaneo-mcp)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 [![Add to Cursor](https://img.shields.io/badge/Cursor-Add%20kaneo--mcp-000000?style=for-the-badge&logo=cursor)](cursor://anysphere.cursor-deeplink/mcp/install?name=kaneo&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBzYWRhbWRpL2thbmVvLW1jcCIsInNlcnZlIl0sImVudiI6e319)
+
+Package on npm: [npmjs.com/package/@sadamdi/kaneo-mcp](https://www.npmjs.com/package/@sadamdi/kaneo-mcp)
 
 ## Quick install
 

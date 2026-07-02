@@ -4,3 +4,4 @@ dist/
 *.log
 npm_recovery_codes.txt
 *recovery_codes*
+.npmrc
