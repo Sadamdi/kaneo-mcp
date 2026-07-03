@@ -160,6 +160,46 @@ Set `KANEO_BASE_URL` to `https://<your-instance>/api`. Device-flow sign-in works
 self-hosted instances too, as long as the server allows the `kaneo-mcp` client id (it does by
 default).
 
+## Claude Code Skills
+
+Folder `skills/` berisi skill files untuk Claude Code yang memudahkan pengelolaan task Kaneo langsung dari CLI.
+
+### Skills yang tersedia
+
+| Skill | Perintah | Fungsi |
+|-------|----------|--------|
+| kaneo-create | `/kaneo-create` | Buat task baru secara interaktif |
+| kaneo-review | `/kaneo-review` | Review & analisis task per project/status |
+| kaneo-move | `/kaneo-move` | Pindah task ke status/kolom lain |
+| kaneo-done | `/kaneo-done` | Tandai task selesai dengan cepat |
+| kaneo-search | `/kaneo-search` | Cari task di semua project |
+| kaneo-standup | `/kaneo-standup` | Laporan harian / standup meeting |
+| kaneo-sprint | `/kaneo-sprint` | Planning sprint/iterasi |
+| kaneo-close-sprint | `/kaneo-close-sprint` | Tutup sprint & bersihkan task |
+
+### Cara install skill
+
+Jalankan perintah berikut dari root folder ini:
+
+```bash
+# Buat direktori dan symlink semua skill sekaligus
+for skill in kaneo-create kaneo-review kaneo-move kaneo-done kaneo-search kaneo-standup kaneo-sprint kaneo-close-sprint; do
+  mkdir -p ~/.claude/skills/$skill
+  ln -sf "$(pwd)/skills/$skill/SKILL.md" ~/.claude/skills/$skill/SKILL.md
+done
+```
+
+Atau install manual satu per satu (copy biasa, tidak auto-update):
+
+```bash
+for skill in kaneo-create kaneo-review kaneo-move kaneo-done kaneo-search kaneo-standup kaneo-sprint kaneo-close-sprint; do
+  mkdir -p ~/.claude/skills/$skill
+  cp skills/$skill/SKILL.md ~/.claude/skills/$skill/SKILL.md
+done
+```
+
+Restart Claude Code setelah install. Semua skill langsung bisa dipakai dengan `/kaneo-*`.
+
 ## License
 
 MIT
