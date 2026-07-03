@@ -1,85 +1,31 @@
-# /kaneo-search — Cari Task di Semua Project
+---
+name: kaneo-search
+description: Find Kaneo tasks by keyword, status, assignee, label, or priority across projects. Use when the user is looking for a task, wants everything matching a filter, or can't remember where a task lives.
+---
 
-Skill untuk mencari task berdasarkan kata kunci, status, assignee, atau kriteria lain.
+# /kaneo-search — Find tasks
 
-## Alur Kerja
+Read first: `_shared/grounding.md`, `_shared/tools-reference.md`.
 
-### Pencarian Cepat (by keyword)
+## Keyword search (fast)
+`search { query: <keywords>, workspaceId? }` → show title, project, status, assignee for each hit.
 
-```
-mcp__kaneo__search { "query": "<kata kunci>" }
-```
-
-Tampilkan hasil dengan info: judul, project, status, assignee.
-
-### Pencarian by Status di Semua Project
-
-Jika user mau cari semua task dengan status tertentu (misal semua `in-review`):
-
-1. Ambil semua project:
-   ```
-   mcp__kaneo__list_projects
-   ```
-
-2. Export tasks per project, lalu filter:
-   ```python
-   import json
-   
-   def search_by_status(filepath, target_status):
-       with open(filepath) as f:
-           data = json.load(f)
-       inner = json.loads(data[0]['text'])
-       tasks = inner.get('tasks', [])
-       return [t for t in tasks if t.get('status') == target_status]
-   ```
-
-### Pencarian by Assignee
-
-Jika user mau lihat semua task miliknya:
-1. Cari user ID dari project members
-2. Export tasks dan filter by `assignee.id`
-
+## Filter by status / label / assignee / priority
+`search` covers text; for structured filters, `export_tasks` per project and filter in Python
+(`_shared/tools-reference.md`):
 ```python
-def search_by_assignee(filepath, user_id):
-    with open(filepath) as f:
-        data = json.load(f)
-    inner = json.loads(data[0]['text'])
-    tasks = inner.get('tasks', [])
-    return [
-        t for t in tasks
-        if t.get('assignee') and t['assignee'].get('id') == user_id
-    ]
+import json
+data = json.load(open('<file>'))
+tasks = json.loads(data[0]['text']).get('tasks', [])
+hits = [t for t in tasks if t.get('status') == 'in-review']          # or priority/label
 ```
+For assignee: resolve the userId via `list_workspace_members`, then filter by `assignee.id`.
+For "my tasks": find the user's own member id first.
 
-### Format Hasil
+## Output
+Group results by project, then status. Show `[id] title — status — @assignee`. Offer follow-ups:
+open one (`get_task`), move it (`/kaneo-move`), or close it (`/kaneo-done`).
 
-```
-## Hasil Pencarian: "[query]"
-Ditemukan X task
-
-### E-Commerce
-- [in-progress] Implementasi halaman checkout — @Imam
-- [in-review] Update API dokumentasi — @Budi
-
-### Simpan Pinjam
-- [to-do] Form pengajuan pinjaman — Unassigned
-```
-
-## Contoh Perintah User
-
-> "cari task yang berhubungan dengan checkout"
-
-> "tampilkan semua task yang di-assign ke saya"
-
-> "cari task in-review di semua project"
-
-> "ada task tentang 'dokumentasi' di mana saja?"
-
-> "task mana yang belum punya assignee?"
-
-## Tips
-
-- `mcp__kaneo__search` adalah pencarian full-text — bagus untuk keyword
-- Untuk filter by status/assignee, `export_tasks` + Python lebih akurat
-- Tampilkan hasil terkelompok per project agar mudah dibaca
-- Jika hasil terlalu banyak, tanya user mau filter lebih spesifik
+## Example prompts
+> "find the task about refresh tokens" · "show all in-review tasks" ·
+> "what's assigned to me?" · "all urgent bugs across projects"

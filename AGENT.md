@@ -1,116 +1,64 @@
 # Kaneo MCP — Agent Instructions
 
-Instruksi ini berlaku untuk semua AI agent (Claude, Cursor, Copilot, Codex, Gemini, dll) yang bekerja dengan Kaneo via MCP.
+For every AI agent (Claude, Cursor, Copilot, Codex, Gemini, …) working with Kaneo through this MCP.
+Indonesian version: [`AGENT.id.md`](AGENT.id.md).
 
-## Konteks
+## What Kaneo is
+Kaneo is a team project-management board. The `@sadamdi/kaneo-mcp` server exposes the full Kaneo API
+(91 tools) for projects, tasks, comments, labels, time tracking, notifications, workspaces/members,
+and integrations. Because it's a **shared team board**, correctness matters — never guess or invent.
 
-Kaneo adalah project management tool. MCP server (`@sadamdi/kaneo-mcp`) memberikan akses penuh ke API Kaneo — 79 tools untuk mengelola project, task, komentar, label, time tracking, dan integrasi.
+## Read these first (skills/_shared/)
+- `grounding.md` — anti-hallucination protocol (**mandatory**).
+- `language.md` — which language to reply in (global vs local, auto-infer).
+- `conventions.md` — how a good card looks (title, sections, labels, priority, status).
+- `templates.md` — card templates per project type (backend/frontend/mobile/infra/data).
+- `project-detection.md` — auto-detect the project's stack + flow.
+- `context-memory.md` — `.kaneo/context.md`, the shared project memory.
+- `tools-reference.md` — every tool, its params, and gotchas.
 
-## Aturan Utama
+## Golden rules (from grounding.md)
+1. **Discovery first** — `list_projects` / `list_columns` / `list_workspace_members` before acting;
+   never hardcode or invent IDs.
+2. **Search before create** — no duplicate tasks.
+3. **Read before write** — `get_task` first; merge, preserve; progress → `add_comment`.
+4. **Verify after write** — read back, report the real id/status.
+5. **Evidence rule** — every endpoint/file/schema in a card must be verified in the codebase, else
+   `TBD (verify)`.
+6. **Confirm before delete/bulk** — preview + explicit approval.
 
-1. **Selalu discovery dulu** — jangan hardcode ID apapun. Gunakan `list_projects` untuk dapat project ID terkini sebelum melakukan aksi apapun.
-2. **Status adalah string** — nilai valid: `to-do`, `in-progress`, `in-review`, `done`.
-3. **Konfirmasi sebelum hapus** — tampilkan daftar item yang akan dihapus dan minta konfirmasi eksplisit sebelum menjalankan `delete_task` atau `delete_project`. Tidak ada undo.
-4. **Response besar** — `export_tasks` bisa menghasilkan data sangat besar. Gunakan Python/jq untuk analisis, jangan baca mentah.
-5. **Satu workspace** — kecuali user secara eksplisit minta ganti workspace, gunakan workspace yang sudah aktif di session.
+## Language
+Reply in the team's language. Resolution: `.kaneo/context.md` `language:` (local) → `KANEO_LANG`
+env → global config (`get_user_preferences`) → ask once (auto-infer from board + docs) and persist.
 
-## Skill yang Tersedia
+## Project context memory
+If `.kaneo/context.md` exists, read it first and follow its board map, language, stack, and
+templates. If it doesn't, suggest `/kaneo-setup`. After each create/status-change/completion, append
+to its Activity log.
 
-Jika AI agent mendukung skill/slash command, gunakan skill yang sesuai:
+## Skills (12)
+| Situation | Skill |
+|-----------|-------|
+| First-time setup / onboarding in a repo | `/kaneo-setup` |
+| Create a new task | `/kaneo-create` |
+| Documentation-grade card from code/spec | `/kaneo-document` |
+| Review a board / health check | `/kaneo-review` |
+| Move a task's status | `/kaneo-move` |
+| Mark task(s) done (evidence-based) | `/kaneo-done` |
+| Find tasks | `/kaneo-search` |
+| Daily standup report | `/kaneo-standup` |
+| Sprint planning | `/kaneo-sprint` |
+| Close a sprint | `/kaneo-close-sprint` |
+| Reconcile board with git/PRs/code | `/kaneo-sync` |
 
-| Situasi | Skill |
-|---------|-------|
-| User mau buat task baru | `/kaneo-create` |
-| User mau review task / lihat status | `/kaneo-review` |
-| User mau pindah status task | `/kaneo-move` |
-| User mau tandai task selesai | `/kaneo-done` |
-| User mau assign task ke orang | `/kaneo-assign` |
-| User mau cari task | `/kaneo-search` |
-| User mau laporan harian / standup | `/kaneo-standup` |
-| User mau planning sprint | `/kaneo-sprint` |
-| User mau tutup sprint & bersihkan task | `/kaneo-close-sprint` |
+Assigning is handled inside `/kaneo-create` and `/kaneo-move` (resolve userId via
+`list_workspace_members`).
 
-## Tools yang Sering Dipakai
+## Staying up to date
+On startup the server checks npm for a newer version. If one exists, the server's instructions and
+a `check_for_updates` tool report it — tell the user to run `npx -y @sadamdi/kaneo-mcp@latest` and
+restart their client before continuing.
 
-```
-# Discovery
-mcp__kaneo__list_projects          → semua project + ID
-mcp__kaneo__list_columns           → kolom di project
-mcp__kaneo__get_project            → detail project + members
-
-# Baca task
-mcp__kaneo__list_tasks             → task di project (ringkas)
-mcp__kaneo__export_tasks           → semua task + deskripsi (lengkap)
-mcp__kaneo__get_task               → detail satu task
-mcp__kaneo__search                 → cari task by keyword
-
-# Aksi task
-mcp__kaneo__create_task            → buat task baru
-mcp__kaneo__update_task            → update judul/deskripsi
-mcp__kaneo__set_task_status        → ubah status
-mcp__kaneo__set_task_priority      → set priority
-mcp__kaneo__set_task_assignee      → assign ke user
-mcp__kaneo__set_task_due_date      → set due date
-mcp__kaneo__move_task              → pindah ke kolom tertentu
-mcp__kaneo__bulk_update_tasks      → update banyak task sekaligus
-mcp__kaneo__delete_task            → hapus task (KONFIRMASI DULU)
-
-# Kolaborasi
-mcp__kaneo__add_comment            → tambah komentar
-mcp__kaneo__list_comments          → lihat komentar
-mcp__kaneo__list_task_activity     → riwayat aktifitas task
-```
-
-## Status Values
-
-| String | Arti |
-|--------|------|
-| `to-do` | Belum dikerjakan (backlog) |
-| `in-progress` | Sedang dikerjakan |
-| `in-review` | Menunggu review / QA |
-| `done` | Selesai |
-
-## Priority Values
-
-`low` · `medium` · `high` · `urgent`
-
-## Analisis Data Besar
-
-Ketika `export_tasks` menyimpan ke file (karena response terlalu besar):
-
-```python
-import json
-from collections import Counter
-
-with open('<path-dari-output>') as f:
-    data = json.load(f)
-inner = json.loads(data[0]['text'])
-tasks = inner.get('tasks', inner)  # handle dua format
-
-# Hitung per status
-print(Counter(t.get('status') for t in tasks))
-
-# Filter status tertentu
-in_progress = [t for t in tasks if t.get('status') == 'in-progress']
-```
-
-## Panduan Hapus Task (close-sprint / cleanup)
-
-Selalu ikuti urutan ini sebelum `delete_task`:
-
-1. Tampilkan daftar task yang akan dihapus (judul + status)
-2. Minta konfirmasi eksplisit dari user
-3. Hapus satu per satu, konfirmasi setiap berhasil
-4. Laporkan berapa yang berhasil dihapus
-
-Jika user ragu, rekomendasikan pindah ke `to-do` (backlog) dulu daripada langsung hapus.
-
-## Setup untuk Agent Baru
-
-Jika kamu agent yang baru pertama kali bekerja di environment ini:
-
-1. Cek MCP server aktif: `mcp__kaneo__get_instance_status`
-2. Ambil daftar project: `mcp__kaneo__list_projects`
-3. Tanya user mau kerja di project mana
-
-Jika MCP tools tidak tersedia, minta user untuk setup MCP server terlebih dahulu (lihat README.md).
+## If tools aren't available
+`mcp__kaneo__*` tools missing → ask the user to register/restart the MCP server (see README).
+Verify with `get_config`.

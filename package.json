@@ -1,7 +1,7 @@
 {
   "name": "@sadamdi/kaneo-mcp",
-  "version": "0.2.0",
-  "description": "MCP server covering the full Kaneo API — projects, tasks, columns, labels, comments, time entries, notifications, search, and GitHub/Gitea/Discord/Slack/webhook integrations. Supports API key or browser device-flow auth, with an interactive installer for Cursor, Claude Desktop, and Claude Code.",
+  "version": "0.3.0",
+  "description": "MCP server for the full Kaneo API (91 tools) plus documentation-grade skills: project auto-detection, aligned card templates, shared project context memory, grounding rules, English/Indonesian/any language (global or per-project), and an interactive installer for Cursor, Claude Desktop, and Claude Code.",
   "type": "module",
   "bin": {
     "kaneo-mcp": "dist/cli.js"
@@ -11,12 +11,15 @@
     "url": "git+https://github.com/Sadamdi/kaneo-mcp.git"
   },
   "homepage": "https://github.com/Sadamdi/kaneo-mcp",
-  "keywords": ["mcp", "model-context-protocol", "kaneo", "project-management"],
+  "keywords": ["mcp", "model-context-protocol", "kaneo", "project-management", "skills", "i18n"],
   "publishConfig": {
     "access": "public"
   },
   "files": [
-    "dist"
+    "dist",
+    "skills",
+    "AGENT.md",
+    "AGENT.id.md"
   ],
   "scripts": {
     "build": "tsc",

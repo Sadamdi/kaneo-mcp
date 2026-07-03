@@ -1,111 +1,37 @@
-# /kaneo-sprint — Sprint Planning di Kaneo
+---
+name: kaneo-sprint
+description: Plan a sprint/iteration in Kaneo — pick priorities from the backlog, assign, set due dates, and balance team capacity. Use when the user wants to plan a sprint, pick this week's work, or distribute tasks.
+---
 
-Skill untuk membantu planning sprint/iterasi: prioritas task, assign, set due date, dan review kapasitas tim.
+# /kaneo-sprint — Sprint planning
 
-## Kapan Digunakan
+Read first: `_shared/grounding.md`, `_shared/conventions.md`, `_shared/context-memory.md`.
 
-- Awal sprint/minggu baru
-- Mau pilih task mana yang dikerjakan minggu ini
-- Mau distribusi task ke anggota tim secara merata
+## Step 1 — Backlog
+`export_tasks` for the board; filter `to-do`. Show them sorted by priority with current assignee
+(`_shared/tools-reference.md`).
 
-## Alur Kerja
+## Step 2 — Sprint parameters
+Ask: team capacity (people × ~3–5 tasks each), any must-include high-priority items, and sprint
+length / end date.
 
-### Step 1: Review Backlog
+## Step 3 — Select
+Recommend tasks by: priority (`urgent`→`high`→`medium`→`low`), existing assignee, and related work
+that can go in parallel. Respect ~3–5 tasks per person. Confirm the selection with the user.
 
-Ambil semua task `to-do` di project:
+## Step 4 — Set up each selected task
+`set_task_due_date` (sprint end; default +7 days if unstated), `set_task_assignee` where missing
+(userId from `list_workspace_members`), optionally `set_task_status` → `in-progress` for work
+starting immediately. Record the sprint goal as an `add_comment` on the chosen tasks.
+
+## Step 5 — Plan output + log
 ```
-mcp__kaneo__export_tasks { "projectId": "<id>" }
-```
-
-Filter task `to-do`, tampilkan ke user:
-```python
-import json
-
-with open('<filepath>') as f:
-    data = json.load(f)
-inner = json.loads(data[0]['text'])
-tasks = inner.get('tasks', [])
-
-backlog = [t for t in tasks if t.get('status') == 'to-do']
-print(f"Backlog: {len(backlog)} task")
-for t in backlog:
-    priority = t.get('priority', 'none')
-    assignee = t.get('assignee', {}).get('name', 'Unassigned') if t.get('assignee') else 'Unassigned'
-    print(f"  [{priority}] {t['title']} — {assignee}")
-```
-
-### Step 2: Tanya Sprint Goal
-
-Tanya user:
-- **Berapa task yang bisa dikerjakan sprint ini?** (kapasitas tim)
-- **Ada task prioritas tinggi yang wajib masuk sprint?**
-- **Sprint berapa hari / sampai tanggal berapa?**
-
-### Step 3: Pilih Task untuk Sprint
-
-Rekomendasikan task berdasarkan:
-1. Priority (`urgent` → `high` → `medium` → `low`)
-2. Task yang sudah punya assignee
-3. Task yang berkaitan (bisa dikerjakan paralel)
-
-Konfirmasi ke user: **"Task berikut yang masuk sprint ini, setuju?"**
-
-### Step 4: Setup Task Sprint
-
-Untuk setiap task yang dipilih, set:
-
-**Pindah ke in-progress (jika langsung dikerjakan):**
-```
-mcp__kaneo__set_task_status {
-  "taskId": "<id>",
-  "status": "in-progress"
-}
-```
-
-**Set due date akhir sprint:**
-```
-mcp__kaneo__set_task_due_date {
-  "taskId": "<id>",
-  "dueDate": "<tanggal-akhir-sprint>"
-}
-```
-
-**Assign jika belum:**
-```
-mcp__kaneo__set_task_assignee {
-  "taskId": "<id>",
-  "userId": "<user-id>"
-}
-```
-
-### Step 5: Laporan Sprint Plan
-
-```
-# 🚀 Sprint Plan — [Tanggal Mulai] s/d [Tanggal Selesai]
-## Project: [Nama Project]
-
-Total kapasitas: X task
-
+# Sprint Plan — <start> → <end>  ·  <project>
 | # | Task | Priority | Assignee | Due |
-|---|------|----------|----------|-----|
-| 1 | Implementasi checkout | high | @Imam | 10 Jul |
-| 2 | Update dokumentasi API | medium | @Budi | 10 Jul |
-| 3 | Fix bug login | urgent | @Imam | 8 Jul |
-
-**Backlog tersisa:** Y task (belum masuk sprint ini)
+Backlog remaining: N
 ```
+Append a `sprint planned` entry to the Activity log. Offer `/kaneo-standup` for day one.
 
-## Contoh Perintah User
-
-> "bantu planning sprint minggu ini untuk project E-Commerce"
-
-> "pilih 5 task prioritas tertinggi dari backlog Simpan Pinjam untuk sprint ini"
-
-> "sprint planning untuk semua project, due tanggal 11 Juli"
-
-## Tips
-
-- Jangan masukkan task `in-progress` dari sprint sebelumnya — fokus ke backlog baru
-- Rekomendasikan maksimal 3-5 task per orang per sprint
-- Jika tidak ada due date disebutkan, default ke 7 hari dari hari ini
-- Setelah planning selesai, tawarkan untuk jalankan `/kaneo-standup` di hari pertama sprint
+## Example prompts
+> "plan this week's sprint for E-Commerce" · "pick the 5 highest-priority backlog items" ·
+> "sprint until July 11, assign evenly"

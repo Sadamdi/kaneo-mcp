@@ -109,19 +109,21 @@ leave the env block without KANEO_API_KEY so I can sign in via browser on first 
 Tell me to restart the client afterward, then verify by calling the list_projects tool.
 ```
 
-## Available tools (79)
+## Available tools (91)
 
 | Category | Tools |
 |---|---|
+| Workspaces | `list_workspaces`, `get_workspace`, `list_workspace_members`, `whoami` |
 | Projects | `list_projects`, `get_project`, `create_project`, `update_project`, `archive_project`, `unarchive_project`, `delete_project` |
 | Tasks | `list_tasks`, `get_task`, `create_task`, `update_task`, `set_task_status`, `set_task_priority`, `set_task_assignee`, `set_task_due_date`, `move_task`, `delete_task`, `import_tasks`, `export_tasks`, `bulk_update_tasks` |
 | Columns | `list_columns`, `create_column`, `reorder_columns`, `update_column`, `delete_column` |
-| Comments / Activity | `list_comments`, `add_comment`, `list_task_activity` |
+| Comments / Activity | `list_comments`, `add_comment`, `update_comment`, `delete_comment`, `list_task_activity`, `create_activity`, `list_task_external_links` |
 | Labels | `list_workspace_labels`, `list_task_labels`, `create_label`, `get_label`, `update_label`, `delete_label`, `attach_label_to_task`, `detach_label_from_task` |
 | Time Entries | `list_task_time_entries`, `get_time_entry`, `create_time_entry`, `update_time_entry` |
-| Notifications | `list_notifications`, `mark_notification_read`, `mark_all_notifications_read`, `clear_all_notifications`, `get_notification_preferences`, `update_notification_preferences`, `upsert_workspace_notification_rule`, `delete_workspace_notification_rule` |
+| Notifications | `list_notifications`, `create_notification`, `mark_notification_read`, `mark_all_notifications_read`, `clear_all_notifications`, `get_notification_preferences`, `update_notification_preferences`, `upsert_workspace_notification_rule`, `delete_workspace_notification_rule` |
 | Assets | `get_asset` |
 | Search / Instance | `search`, `get_config`, `get_instance_status` |
+| Preferences / Updates | `get_user_preferences`, `set_user_preferences`, `check_for_updates` |
 | GitHub | `get_github_app_info`, `list_github_repositories`, `verify_github_repository`, `get_github_integration`, `connect_github_integration`, `update_github_integration`, `disconnect_github_integration`, `import_github_issues` |
 | Gitea | `list_gitea_repositories`, `verify_gitea_repository`, `get_gitea_integration`, `connect_gitea_integration`, `update_gitea_integration`, `disconnect_gitea_integration`, `import_gitea_issues` |
 | Discord | `get_discord_integration`, `connect_discord_integration`, `update_discord_integration`, `disconnect_discord_integration` |
@@ -134,71 +136,111 @@ management across an entire organization) are intentionally out of scope, since 
 different risk profile than task/project operations.
 
 A typical flow: `search` or `list_projects` to find the target → `list_columns` to see valid
-statuses → `create_task` / `update_task` / `set_task_status` to act.
+statuses → `create_task` / `update_task` / `set_task_status` to act. Grounding rules (never invent
+IDs or facts) are enforced via the server's MCP instructions, so they reach every client — even
+without the skills installed.
+
+## Language support
+
+The default language is **English**, but you can change it — **Bahasa Indonesia** ships built-in,
+and any other language works too. There are two scopes:
+
+| Scope | Where | Applies to | How to set |
+|-------|-------|------------|-----------|
+| **Global** | `~/.config/kaneo-mcp/config.json` | all your projects, this machine | installer wizard, or `set_user_preferences`, or edit the file |
+| **Local** | `.kaneo/context.md` (`language:`) | this project/team (committed, shared) | `/kaneo-setup`, or edit the file |
+| **Per-machine override** | `KANEO_LANG` env in the client config | this machine | edit the MCP config `env` |
+
+Resolution order (first wins): **local** `.kaneo/context.md` → `KANEO_LANG` → **global** config →
+if nothing is set, the AI infers your team's language from the board and docs, asks once, and saves
+it. Read the active language any time with `get_user_preferences`.
+
+## Skills (documentation-grade board management)
+
+The `skills/` directory turns any AI into a grounded Kaneo teammate: consistent templates, project
+auto-detection, and no hallucinated data. Install them into your AI client:
+
+```bash
+npx @sadamdi/kaneo-mcp skills                 # into ./.claude/skills (project)
+npx @sadamdi/kaneo-mcp skills --target user   # into ~/.claude/skills (all projects)
+npx @sadamdi/kaneo-mcp skills --lang id       # Indonesian skill text
+```
+
+| Skill | Use it to |
+|-------|-----------|
+| `/kaneo-setup` | Onboard a repo: auto-detect stack, infer team language, map boards, write `.kaneo/context.md` |
+| `/kaneo-create` | Create a well-formed task (title, acceptance criteria, labels, assignee) |
+| `/kaneo-document` | Turn code/spec into a documentation-grade card (evidence-verified) |
+| `/kaneo-review` | Review a board + health checks (WIP, stale, unassigned) |
+| `/kaneo-move` | Change a task's status with the right semantics |
+| `/kaneo-done` | Close tasks with an evidence-based acceptance-criteria check |
+| `/kaneo-search` | Find tasks by keyword / status / assignee / label |
+| `/kaneo-standup` | Daily standup report grouped by person |
+| `/kaneo-sprint` | Sprint planning with team capacity balancing |
+| `/kaneo-close-sprint` | Close a sprint (carry over, safe cleanup) |
+| `/kaneo-sync` | Reconcile the board with git history / merged PRs / code |
+
+Shared reference docs live in `skills/_shared/` (grounding, conventions, templates,
+project-detection, context-memory, language, full tools-reference) in English + Indonesian.
+
+## Project context (`.kaneo/context.md`)
+
+`/kaneo-setup` writes a committed `.kaneo/context.md` at your repo root. It records the team
+language, workspace/board map, detected stack per sub-project, template variants, label taxonomy,
+and an activity log. Every skill reads it first, so your AI (and your whole team's AIs) stay
+consistent and remember context across sessions. Commit it to share; edit any field manually.
+
+## Set it up by talking to your AI (skill-aware)
+
+Fill the bracketed overrides, then paste into any AI with terminal/file access:
+
+```
+Set up Kaneo for this project.
+1. If the kaneo MCP server isn't registered, add it: command "npx", args ["-y",
+   "@sadamdi/kaneo-mcp", "serve"], env KANEO_API_KEY=[PASTE_KEY] (leave blank for browser
+   sign-in), KANEO_WORKSPACE_ID=[optional].
+2. Install the skills: run `npx @sadamdi/kaneo-mcp skills`.
+3. Run the /kaneo-setup skill: auto-detect this repo's stack, infer our team's language from the
+   board and docs, confirm the project↔board mapping, and write .kaneo/context.md.
+Overrides: [LANGUAGE: auto | en | id | <any>]  [SCOPE: local | global]  [BOARD: auto | <name>].
+Then restart the client and verify by calling list_projects.
+```
+
+## Staying up to date
+
+Every time the server starts it checks npm for a newer version. If one exists, it tells your AI (via
+the server instructions and the `check_for_updates` tool) to notify you. To update:
+
+```bash
+npx -y @sadamdi/kaneo-mcp@latest        # runs the newest version
+# or, if pinned in a client config, bump the version and restart the client
+```
+
+`npx @sadamdi/kaneo-mcp` (no version) already fetches the latest on each run. Restart your AI client
+after updating so it reloads the tools.
 
 ## Sharing with teammates
 
 Each person runs `npx @sadamdi/kaneo-mcp` themselves and authenticates with their own API key or
-their own browser sign-in — nobody shares credentials, nobody clones a repo.
+browser sign-in — nobody shares credentials, nobody clones a repo. Commit `.kaneo/context.md` so
+everyone's AI shares the same board map, language, and templates.
 
 ## Running from source
 
 ```bash
 git clone https://github.com/Sadamdi/kaneo-mcp.git
 cd kaneo-mcp
-npm install
-npm run build
+npm install && npm run build
 node dist/cli.js serve
 ```
 
-Use `"command": "node", "args": ["/absolute/path/to/kaneo-mcp/dist/cli.js", "serve"]` in a client
-config in place of the `npx` line if you build locally instead.
+Use `"command": "node", "args": ["/abs/path/to/kaneo-mcp/dist/cli.js", "serve"]` in a client config
+in place of the `npx` line if you build locally.
 
 ## Self-hosted Kaneo
 
 Set `KANEO_BASE_URL` to `https://<your-instance>/api`. Device-flow sign-in works against
-self-hosted instances too, as long as the server allows the `kaneo-mcp` client id (it does by
-default).
-
-## Claude Code Skills
-
-Folder `skills/` berisi skill files untuk Claude Code yang memudahkan pengelolaan task Kaneo langsung dari CLI.
-
-### Skills yang tersedia
-
-| Skill | Perintah | Fungsi |
-|-------|----------|--------|
-| kaneo-create | `/kaneo-create` | Buat task baru secara interaktif |
-| kaneo-review | `/kaneo-review` | Review & analisis task per project/status |
-| kaneo-move | `/kaneo-move` | Pindah task ke status/kolom lain |
-| kaneo-done | `/kaneo-done` | Tandai task selesai dengan cepat |
-| kaneo-search | `/kaneo-search` | Cari task di semua project |
-| kaneo-standup | `/kaneo-standup` | Laporan harian / standup meeting |
-| kaneo-sprint | `/kaneo-sprint` | Planning sprint/iterasi |
-| kaneo-close-sprint | `/kaneo-close-sprint` | Tutup sprint & bersihkan task |
-
-### Cara install skill
-
-Jalankan perintah berikut dari root folder ini:
-
-```bash
-# Buat direktori dan symlink semua skill sekaligus
-for skill in kaneo-create kaneo-review kaneo-move kaneo-done kaneo-search kaneo-standup kaneo-sprint kaneo-close-sprint; do
-  mkdir -p ~/.claude/skills/$skill
-  ln -sf "$(pwd)/skills/$skill/SKILL.md" ~/.claude/skills/$skill/SKILL.md
-done
-```
-
-Atau install manual satu per satu (copy biasa, tidak auto-update):
-
-```bash
-for skill in kaneo-create kaneo-review kaneo-move kaneo-done kaneo-search kaneo-standup kaneo-sprint kaneo-close-sprint; do
-  mkdir -p ~/.claude/skills/$skill
-  cp skills/$skill/SKILL.md ~/.claude/skills/$skill/SKILL.md
-done
-```
-
-Restart Claude Code setelah install. Semua skill langsung bisa dipakai dengan `/kaneo-*`.
+self-hosted instances too.
 
 ## License
 

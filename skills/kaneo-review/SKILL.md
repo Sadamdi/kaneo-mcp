@@ -1,96 +1,43 @@
-# /kaneo-review — Review Task di Kaneo
+---
+name: kaneo-review
+description: Review and analyse tasks on a Kaneo board — status breakdown, health checks, and insights. Use when the user wants to see the state of a project, what's in progress, or a board health report.
+---
 
-Skill untuk mereview dan menganalisis task di project Kaneo.
+# /kaneo-review — Review a board
 
-## Alur Kerja
+Read first: `_shared/grounding.md`, `_shared/conventions.md`, `_shared/context-memory.md`.
 
-### Step 1: Tentukan Scope Review
+## Step 1 — Scope
+One project or all? A status filter (`in-progress`, `to-do`, `in-review`, `done`, or all)? Read
+`.kaneo/context.md` for the board map; reply in the team language.
 
-Tanya user (atau deteksi dari perintah):
-- Review **satu project** atau **semua project**?
-- Filter status tertentu? (`in-progress`, `to-do`, `in-review`, `done`, atau semua)
+## Step 2 — Data
+`list_tasks` for a quick view, or `export_tasks` for full detail (analyse large output with Python —
+`_shared/tools-reference.md`). For "all projects", loop `list_projects` → export each.
 
-### Step 2: Ambil Data
-
-**Jika satu project:**
+## Step 3 — Group + display
+Group by status and show:
 ```
-mcp__kaneo__list_projects
-```
-Pilih project yang relevan, lalu:
-```
-mcp__kaneo__export_tasks { "projectId": "<id>" }
-```
-
-**Jika semua project:**
-Jalankan `list_projects`, lalu `export_tasks` untuk setiap project.
-
-### Step 3: Analisis Data
-
-Untuk response besar yang disimpan ke file, gunakan Python:
-
-```python
-import json
-from collections import Counter
-
-with open('<path-file>') as f:
-    data = json.load(f)
-inner = json.loads(data[0]['text'])
-tasks = inner.get('tasks', inner)
-
-# Grup berdasarkan status
-by_status = {}
-for t in tasks:
-    s = t.get('status', 'unknown')
-    by_status.setdefault(s, []).append(t)
-
-# Tampilkan per status
-for status, items in by_status.items():
-    print(f"\n=== {status.upper()} ({len(items)}) ===")
-    for t in items:
-        print(f"  [{t.get('id','')}] {t.get('title','')}")
+## Review: <project>  (total N)
+### In Progress (n)   - [id] title — @assignee
+### In Review (n)     - [id] title — @assignee
+### To Do (n)         - [id] title
+### Done (n)          - [id] title
 ```
 
-### Step 4: Tampilkan Hasil
+## Step 4 — Health checks (insights)
+Flag, per `_shared/conventions.md`:
+- **WIP overload**: any assignee with >3 in-progress.
+- **Stale**: in-progress >7 days without update (use `updatedAt`).
+- **Unassigned in-progress**.
+- **Missing acceptance criteria** in active cards.
+- **No in-review flow** (nothing ever reaches review).
+Give concrete recommendations.
 
-Format output yang baik:
+## Step 5 — Drill down
+On request: `get_task {id}` for full detail, `list_comments {taskId}` for discussion,
+`list_task_activity {taskId}` for history.
 
-```
-## Review: [Nama Project]
-Total task: XX
-
-### 🔴 In Progress (N)
-- [ID] Judul task
-
-### 🟡 In Review (N)
-- [ID] Judul task
-
-### ⚪ To Do (N)
-- [ID] Judul task
-
-### ✅ Done (N)
-- [ID] Judul task
-```
-
-### Step 5: Insight & Rekomendasi (Opsional)
-
-Jika diminta atau terlihat ada anomali, berikan insight:
-- Task `in-progress` terlalu banyak → perlu di-prioritas ulang
-- Tidak ada task `in-review` → alur review mungkin tidak digunakan
-- Banyak task `to-do` tanpa assignee → perlu assignment
-
-## Contoh Perintah User
-
-> "review semua task yang in progress"
-
-> "tampilkan task di project E-Commerce, filter yang belum selesai"
-
-> "ada berapa task per status di Simpan Pinjam?"
-
-> "review semua project, mana yang paling banyak task in progress?"
-
-## Tips
-
-- Untuk review cepat satu project, `list_tasks` lebih efisien dari `export_tasks`
-- Untuk review dengan deskripsi lengkap, gunakan `export_tasks`
-- Jika diminta review task spesifik: `mcp__kaneo__get_task { "taskId": "..." }`
-- Jika user minta lihat komentar: `mcp__kaneo__list_comments { "taskId": "..." }`
+## Example prompts
+> "review the E-Commerce board" · "what's in progress across all projects?" ·
+> "which project has the most stuck tasks?"

@@ -1,143 +1,46 @@
-# /kaneo-create — Buat Task Baru di Kaneo
-
-Skill untuk membuat task baru lengkap: judul, deskripsi, label, priority, dan assignee — semua dalam satu alur.
-
-## Alur Kerja
-
-### Step 1: Pilih Project
-
-```
-mcp__kaneo__list_projects
-```
-
-Tampilkan daftar project, tanya user: **"Mau buat task di project mana?"**
-
-### Step 2: Kumpulkan Semua Info Sekaligus
-
-Setelah project dipilih, ambil data yang dibutuhkan untuk pertanyaan:
-
-```
-mcp__kaneo__list_workspace_labels
-mcp__kaneo__get_project { "projectId": "<id>" }
-```
-
-Lalu tanya user dalam **satu pesan**, semua sekaligus:
-
+---
+name: kaneo-create
+description: Create a new Kaneo task with a proper title, description, acceptance criteria, priority, labels, and assignee. Use when the user wants to add a task, create a ticket, or put work on the board.
 ---
 
-> **Lengkapi detail task baru:**
->
-> 1. **Judul** — apa nama task-nya?
-> 2. **Deskripsi** — (opsional) detail atau acceptance criteria
-> 3. **Priority** — `low` / `medium` / `high` / `urgent`
-> 4. **Assign ke** — siapa yang mengerjakan? (dari daftar members: [tampilkan nama members])
-> 5. **Label** — pilih yang ada: [tampilkan label yang ada], atau sebutkan nama label baru jika mau buat baru, atau kosongkan
-> 6. **Due date** — (opsional) format: DD MMM YYYY
+# /kaneo-create — Create a well-formed task
 
----
+One flow: gather info, apply conventions, avoid duplicates, verify. For heavy documentation-grade
+cards (endpoints/files/schema from code), use `/kaneo-document` instead.
 
-Jika user sudah menyebutkan semua info dalam perintah awal, skip pertanyaan dan langsung proses.
+Read first: `_shared/grounding.md`, `_shared/conventions.md`, `_shared/templates.md`,
+`_shared/context-memory.md`.
 
-### Step 3: Buat Label Baru (jika diminta)
+## Step 1 — Context + project
+Read `.kaneo/context.md` (board map, language, template variant). If missing, `list_projects` and
+ask which board. Reply in the team's language.
 
-Jika user minta label baru yang belum ada:
+## Step 2 — Collect details in one message
+Load `list_workspace_labels` and `list_workspace_members`, then ask (skip anything the user already
+gave):
+> 1. **Title** (verb-first) 2. **Description / acceptance criteria** 3. **Priority** (low/medium/
+> high/urgent) 4. **Assignee** (from members: …) 5. **Label(s)** (existing: … or new) 6. **Due date**
 
-```
-mcp__kaneo__create_label {
-  "name": "<nama-label>",
-  "color": "<hex-color>"
-}
-```
+## Step 3 — Draft acceptance criteria
+If the user's description is vague, propose 2–5 testable acceptance-criteria checkboxes
+(`_shared/conventions.md`) and confirm. A task without acceptance criteria is not ready.
 
-Pilih warna yang masuk akal berdasarkan nama label:
-- `bug` / `error` → merah `#ef4444`
-- `feature` / `enhancement` → biru `#3b82f6`
-- `docs` / `dokumentasi` → kuning `#eab308`
-- `design` / `ui` → ungu `#a855f7`
-- `backend` / `api` → hijau `#22c55e`
-- `frontend` → oranye `#f97316`
-- Label lain → abu-abu `#6b7280`
+## Step 4 — Search for duplicates
+`search { query: <title keywords> }`. If a match exists, offer to update it instead (grounding §2).
 
-### Step 4: Buat Task
+## Step 5 — Create
+Build the body with the header block + Context/Scope/Acceptance/Technical notes/Links/DoD from the
+template variant. `create_task { projectId, title, description, status: "to-do" }`.
 
-```
-mcp__kaneo__create_task {
-  "projectId": "<id>",
-  "title": "<judul>",
-  "description": "<deskripsi>",
-  "status": "to-do"
-}
-```
+## Step 6 — Set attributes
+Using the returned task id: `set_task_priority` (default `medium` if unspecified),
+`set_task_assignee` (userId from members; "assign to me" → the user's member id; never guess),
+`attach_label_to_task` (one TYPE + one AREA; `create_label` first if missing), `set_task_due_date`.
 
-### Step 5: Set Semua Atribut (paralel jika bisa)
+## Step 7 — Verify + confirm + log
+`get_task` to confirm; show a summary (title, project, priority, assignee, labels, due, id). Append
+a `created` entry to the Activity log in `.kaneo/context.md`.
 
-Jalankan setelah task berhasil dibuat, gunakan task ID dari response:
-
-**Priority:**
-```
-mcp__kaneo__set_task_priority {
-  "taskId": "<id>",
-  "priority": "<low|medium|high|urgent>"
-}
-```
-
-**Assignee:**
-```
-mcp__kaneo__set_task_assignee {
-  "taskId": "<id>",
-  "userId": "<user-id>"
-}
-```
-
-**Label:**
-```
-mcp__kaneo__attach_label_to_task {
-  "taskId": "<id>",
-  "labelId": "<label-id>"
-}
-```
-
-**Due date (jika ada):**
-```
-mcp__kaneo__set_task_due_date {
-  "taskId": "<id>",
-  "dueDate": "YYYY-MM-DD"
-}
-```
-
-### Step 6: Konfirmasi ke User
-
-Tampilkan ringkasan lengkap task yang baru dibuat:
-
-```
-✅ Task berhasil dibuat!
-
-📋 [Judul Task]
-   Project  : [Nama Project]
-   Priority : 🔴 urgent / 🟠 high / 🟡 medium / ⚪ low
-   Assign   : @[nama assignee]
-   Label    : [nama label]
-   Due      : [tanggal] (jika ada)
-   ID       : [task-id]
-```
-
----
-
-## Contoh Perintah User
-
-> "buatkan task baru di E-Commerce"
-> *(AI tanya semua detail dalam satu pesan)*
-
-> "buat task: implementasi halaman checkout, priority high, assign ke Imam, label frontend"
-
-> "tambah task di Simpan Pinjam: buat form pengajuan pinjaman, urgent, assign ke saya, label baru: 'MVP'"
-
----
-
-## Tips
-
-- Jika user bilang "assign ke saya/aku" — ambil user ID dari data member yang sudah di-load di Step 2
-- Jika label belum ada di workspace, buat dulu sebelum attach
-- Jika user tidak sebut priority, default ke `medium`
-- Jika user tidak sebut assignee, biarkan unassigned — jangan tebak
-- Selalu tampilkan task ID di konfirmasi akhir (berguna untuk `/kaneo-move` dan `/kaneo-done`)
+## Example prompts
+> "add a task in E-Commerce: build the checkout page, high, assign to Imam, label frontend" ·
+> "create a ticket to fix the login 500" · "new task: write API docs"

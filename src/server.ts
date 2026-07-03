@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { KaneoApiError } from "./kaneoClient.js";
+import { config } from "./config.js";
 import type { ToolDef } from "./toolTypes.js";
 import { projectTools } from "./tools/projects.js";
 import { taskTools } from "./tools/tasks.js";
@@ -12,14 +13,54 @@ import { notificationTools } from "./tools/notifications.js";
 import { timeEntryTools } from "./tools/timeEntries.js";
 import { assetTools } from "./tools/assets.js";
 import { integrationTools } from "./tools/integrations.js";
+import { workspaceTools } from "./tools/workspaces.js";
+import { preferenceTools } from "./tools/preferences.js";
+import { updateTools } from "./tools/updates.js";
+import { checkForUpdate, currentVersion } from "./version.js";
+
+function buildInstructions(updateNote: string): string {
+  const lang = config.language;
+  const languageLine =
+    lang === "unset"
+      ? "The user has NOT chosen a working language yet. On the first interaction, ask them to choose: English (default), Bahasa Indonesia, or any other language — and whether to save it globally (set_user_preferences) or for this project only (.kaneo/context.md). Then never ask again."
+      : `The user's preferred working language is "${lang}". Produce ALL user-facing output in this language (a project-level .kaneo/context.md 'language:' field overrides this).`;
+
+  return [
+    "You are operating the Kaneo project-management board through this MCP server.",
+    updateNote,
+    "",
+    `LANGUAGE: ${languageLine}`,
+    "",
+    "GROUNDING RULES (never hallucinate — Kaneo is a shared team board):",
+    "1. Discovery first: call list_projects (and list_columns) before acting; never invent or hardcode IDs. Use list_workspaces / list_workspace_members to resolve workspace and assignee IDs.",
+    "2. Search before create: run search by title keywords; if a matching task exists, update it instead of creating a duplicate.",
+    "3. Read before write: call get_task before update_task; preserve existing description sections and merge changes. Put progress notes and decisions in add_comment, not by overwriting the description.",
+    "4. Verify after write: read the entity back and report its real id/title/status to the user.",
+    "5. Evidence rule: any endpoint, file path, schema, or component you write into a task MUST be verified in the actual codebase first; if unverifiable, mark it 'TBD (verify)' rather than inventing plausible details.",
+    "6. Confirm before delete or bulk change: show a listed preview and get explicit user approval.",
+    "",
+    "PROJECT CONTEXT: if a .kaneo/context.md file exists in the working repo, read it first and follow its language, board mapping, project stack, and templates. Detailed workflows live in this package's skills/ directory (install with `npx @sadamdi/kaneo-mcp skills`).",
+  ].join("\n");
+}
 
 export async function startServer(): Promise<void> {
-  const server = new McpServer({
-    name: "kaneo-mcp",
-    version: "0.2.0",
-  });
+  const update = await checkForUpdate();
+  const updateNote = update.updateAvailable
+    ? `\nUPDATE AVAILABLE: kaneo-mcp ${update.current} → ${update.latest}. Before doing anything else, tell the user a newer version is out and to update with \`${update.command}\`, then restart their AI client.`
+    : "";
+
+  const server = new McpServer(
+    {
+      name: "kaneo-mcp",
+      version: currentVersion(),
+    },
+    {
+      instructions: buildInstructions(updateNote),
+    }
+  );
 
   const allTools: ToolDef[] = [
+    ...workspaceTools,
     ...projectTools,
     ...taskTools,
     ...columnTools,
@@ -30,7 +71,15 @@ export async function startServer(): Promise<void> {
     ...timeEntryTools,
     ...assetTools,
     ...integrationTools,
+    ...preferenceTools,
+    ...updateTools,
   ];
+
+  if (update.updateAvailable) {
+    process.stderr.write(
+      `[kaneo-mcp] Update available: ${update.current} -> ${update.latest}. Run: ${update.command}\n`
+    );
+  }
 
   for (const tool of allTools) {
     server.registerTool(

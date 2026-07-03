@@ -1,6 +1,14 @@
 import { createInterface } from "readline/promises";
 import { getInstallTargets } from "./targets.js";
 import { writeServerEntry } from "./mergeConfig.js";
+import { savePrefs } from "../prefsStore.js";
+
+function resolveLanguage(raw: string): string {
+  const v = raw.trim().toLowerCase();
+  if (v === "" || v === "1" || v === "en" || v === "english") return "en";
+  if (v === "2" || v === "id" || v === "indonesia" || v === "bahasa indonesia") return "id";
+  return raw.trim();
+}
 
 function ask(rl: ReturnType<typeof createInterface>, question: string): Promise<string> {
   return rl.question(question);
@@ -33,12 +41,22 @@ export async function runInstaller(): Promise<void> {
     await ask(rl, "Kaneo API base URL [https://cloud.kaneo.app/api]: ")
   ).trim();
 
+  process.stdout.write(
+    "\nPreferred language for the AI's replies:\n" +
+      "  1) English (default)\n" +
+      "  2) Bahasa Indonesia\n" +
+      "  3) other — type an ISO code or language name\n"
+  );
+  const language = resolveLanguage(await ask(rl, "Language [1]: "));
+
   rl.close();
 
   const env: Record<string, string> = {};
   if (apiKey) env.KANEO_API_KEY = apiKey;
   if (workspaceId) env.KANEO_WORKSPACE_ID = workspaceId;
   if (baseUrl) env.KANEO_BASE_URL = baseUrl;
+  env.KANEO_LANG = language;
+  savePrefs({ language, ...(workspaceId ? { workspaceId } : {}) });
 
   const entry = {
     command: "npx",

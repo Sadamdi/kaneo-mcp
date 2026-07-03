@@ -1,68 +1,34 @@
-# /kaneo-done — Tandai Task Selesai
+---
+name: kaneo-done
+description: Mark Kaneo task(s) as done with an evidence-based completion check. Use when the user finished work, merged a PR, or wants to close tasks. Verifies acceptance criteria before closing.
+---
 
-Skill untuk menandai satu atau beberapa task sebagai `done` dengan cepat.
+# /kaneo-done — Evidence-based completion
 
-## Kapan Digunakan
+Don't just flip status — confirm the work is actually done.
 
-- Selesai mengerjakan sesuatu dan mau update status
-- Mau mark beberapa task sekaligus
-- Setelah PR di-merge / fitur selesai deploy
+Read first: `_shared/grounding.md`, `_shared/conventions.md`, `_shared/context-memory.md`.
 
-## Alur Kerja
+## Step 1 — Find the task(s)
+By id → step 2. By title → `search`. By project → `list_tasks` and show `in-progress` / `in-review`
+cards to pick from. Confirm the match.
 
-### Jika User Menyebut Judul Task
+## Step 2 — Check acceptance criteria
+`get_task` and read the acceptance-criteria checkboxes. For each, confirm it's met (code merged?
+tests pass? deployed?). Ask the user about anything you can't verify. If criteria are unmet, **warn**
+and ask whether to proceed anyway or keep it in progress.
 
-Cari task yang dimaksud:
-```
-mcp__kaneo__search { "query": "<kata kunci dari judul>" }
-```
+## Step 3 — Close
+`set_task_status { id, status: "done" }`. For several at once, confirm the list first, then close
+each (or `bulk_update_tasks` with a preview).
 
-Tampilkan hasilnya dan konfirmasi: **"Ini task yang dimaksud?"**
+## Step 4 — Completion note
+`add_comment` a short note: what shipped + PR/commit reference. This is the durable record; don't
+overwrite the description.
 
-### Jika User Menyebut Project
+## Step 5 — Verify + log
+Read back the status; append a `status … → done` entry to the Activity log in `.kaneo/context.md`.
 
-```
-mcp__kaneo__list_tasks { "projectId": "<id>" }
-```
-
-Tampilkan task yang statusnya `in-progress` atau `in-review`, minta user pilih mana yang selesai.
-
-### Tandai Selesai — Satu Task
-
-```
-mcp__kaneo__set_task_status {
-  "taskId": "<id>",
-  "status": "done"
-}
-```
-
-### Tandai Selesai — Beberapa Task Sekaligus
-
-```
-mcp__kaneo__bulk_update_tasks {
-  "taskIds": ["<id1>", "<id2>", "<id3>"],
-  "status": "done"
-}
-```
-
-### Konfirmasi
-
-> ✅ **[N] task berhasil ditandai selesai:**
-> - [judul task 1]
-> - [judul task 2]
-
-## Contoh Perintah User
-
-> "tandai task 'implementasi checkout' sebagai done"
-
-> "semua task yang in-review di E-Commerce sudah selesai semua"
-
-> "done: update dokumentasi API"
-
-> "mark done task [ID]"
-
-## Tips
-
-- Jika ada `in-review` → tanya dulu apakah review sudah approve, baru mark `done`
-- Jika user bilang "selesai semua" tanpa spesifik, tanya project mana dulu
-- Setelah done, tawari untuk tambah komentar penutup: `mcp__kaneo__add_comment`
+## Example prompts
+> "mark the checkout task done" · "close the auth ticket, PR #42 merged" ·
+> "these three are finished: …"

@@ -1,89 +1,32 @@
-# /kaneo-move — Pindah Task ke Status / Kolom Lain
+---
+name: kaneo-move
+description: Move a Kaneo task to a different status or column. Use when the user wants to change a task's status, start work, send something to review, or reorganise the board.
+---
 
-Skill untuk memindahkan task Kaneo ke status atau kolom yang berbeda.
+# /kaneo-move — Change a task's status/column
 
-## Status yang Tersedia
+Read first: `_shared/grounding.md`, `_shared/conventions.md`.
 
-| Status | Artinya |
-|--------|---------|
-| `to-do` | Belum dikerjakan |
-| `in-progress` | Sedang dikerjakan |
-| `in-review` | Sedang direview |
-| `done` | Selesai |
+Statuses: `to-do` → `in-progress` → `in-review` → `done` (a board may have extra columns — check
+`list_columns`).
 
-## Alur Kerja
+## Step 1 — Find the task
+If the user gave an id, go to step 2. Otherwise `search` by title keywords or `list_tasks` on the
+board and let them pick. Confirm with `get_task` (title + current status).
 
-### Step 1: Temukan Task
+## Step 2 — Target status
+Ask the target status if not given. Enforce status semantics (`_shared/conventions.md`):
+- → **in-progress**: fine; note WIP if the assignee already has >3 in-progress.
+- → **in-review**: ask WHAT to review; add a comment with the PR/branch link
+  (`add_comment`) so reviewers have context.
+- → **done**: hand off to `/kaneo-done` (check acceptance criteria + add a completion note) rather
+  than a bare status flip.
 
-Jika user sudah tahu task ID → langsung ke Step 3.
+## Step 3 — Apply + verify + log
+`set_task_status { id, status }` (or `move_task` for a specific column/project). Read back, confirm
+the real new status, and append a `status <old> → <new>` line to the Activity log in
+`.kaneo/context.md`.
 
-Jika belum tahu:
-```
-mcp__kaneo__list_projects
-```
-Pilih project, lalu:
-```
-mcp__kaneo__list_tasks { "projectId": "<id>" }
-```
-Tampilkan task ke user dan minta mereka pilih yang mana.
-
-### Step 2: Konfirmasi Task yang Dipilih
-
-Tampilkan detail task yang akan dipindahkan:
-```
-mcp__kaneo__get_task { "taskId": "<id>" }
-```
-Tunjukkan: judul, status saat ini, project.
-
-### Step 3: Tentukan Target
-
-Tanya user: **"Mau dipindah ke status apa?"**
-- `to-do` / `in-progress` / `in-review` / `done`
-
-Atau jika user menyebut kolom spesifik, cek kolom yang ada:
-```
-mcp__kaneo__list_columns { "projectId": "<id>" }
-```
-
-### Step 4: Eksekusi
-
-**Pindah via status:**
-```
-mcp__kaneo__set_task_status {
-  "taskId": "<id>",
-  "status": "<target-status>"
-}
-```
-
-**Pindah via kolom:**
-```
-mcp__kaneo__move_task {
-  "taskId": "<id>",
-  "columnId": "<column-id>"
-}
-```
-
-### Step 5: Konfirmasi
-
-Tampilkan konfirmasi singkat:
-> ✅ Task "[judul]" berhasil dipindah dari `[status-lama]` → `[status-baru]`
-
-## Contoh Perintah User
-
-> "pindah task implementasi checkout ke in-progress"
-
-> "task [ID] tandai sebagai in-review"
-
-> "semua task to-do di E-Commerce yang assignee-nya saya, pindah ke in-progress"
-
-> "task 'update dokumentasi API' sudah selesai"
-
-## Shortcut: Pindah Banyak Task Sekaligus
-
-Jika user minta pindah beberapa task:
-```
-mcp__kaneo__bulk_update_tasks {
-  "taskIds": ["<id1>", "<id2>", "<id3>"],
-  "status": "<target-status>"
-}
-```
+## Example prompts
+> "move the checkout task to in progress" · "send the auth ticket to review" ·
+> "put task abc123 back to to-do"

@@ -10,6 +10,19 @@ export const notificationTools: ToolDef[] = [
     handler: async () => kaneo.get("/notification"),
   },
   {
+    name: "create_notification",
+    description: "Create a notification for the authenticated user.",
+    schema: {
+      type: z.string(),
+      title: z.string().optional(),
+      message: z.string().optional(),
+      eventData: z.record(z.string(), z.any()).optional(),
+      relatedEntityId: z.string().optional(),
+      relatedEntityType: z.string().optional(),
+    },
+    handler: async (body: Record<string, unknown>) => kaneo.post("/notification", body),
+  },
+  {
     name: "mark_notification_read",
     description: "Mark a single notification as read.",
     schema: { id: z.string() },
