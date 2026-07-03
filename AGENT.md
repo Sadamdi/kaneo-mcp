@@ -1,23 +1,20 @@
 # Kaneo MCP — Agent Instructions
 
 For every AI agent (Claude, Cursor, Copilot, Codex, Gemini, …) working with Kaneo through this MCP.
-Indonesian version: [`AGENT.id.md`](AGENT.id.md).
 
 ## What Kaneo is
 Kaneo is a team project-management board. The `@sadamdi/kaneo-mcp` server exposes the full Kaneo API
-(91 tools) for projects, tasks, comments, labels, time tracking, notifications, workspaces/members,
-and integrations. Because it's a **shared team board**, correctness matters — never guess or invent.
+for projects, tasks, comments, labels, time tracking, notifications, workspaces/members, and
+integrations. Because it's a **shared team board**, correctness matters — never guess or invent.
 
-## Read these first (skills/_shared/)
-- `grounding.md` — anti-hallucination protocol (**mandatory**).
-- `language.md` — which language to reply in (global vs local, auto-infer).
-- `conventions.md` — how a good card looks (title, sections, labels, priority, status).
-- `templates.md` — card templates per project type (backend/frontend/mobile/infra/data).
-- `project-detection.md` — auto-detect the project's stack + flow.
-- `context-memory.md` — `.kaneo/context.md`, the shared project memory.
-- `tools-reference.md` — every tool, its params, and gotchas.
+## The skill
+There is one skill: **`kaneo`** (in `skills/kaneo/`). It handles every board action — setup,
+create, document, move, done, review, search, standup, sprint, close-sprint, sync — with concrete
+`mcp__kaneo__*` call examples. Install it with `kaneo-mcp skills`. Supporting references live beside
+it: `templates.md` (card templates + the markdown format contract), `tools-reference.md`,
+`context-memory.md`, `project-detection.md`.
 
-## Golden rules (from grounding.md)
+## Golden rules
 1. **Discovery first** — `list_projects` / `list_columns` / `list_workspace_members` before acting;
    never hardcode or invent IDs.
 2. **Search before create** — no duplicate tasks.
@@ -27,37 +24,28 @@ and integrations. Because it's a **shared team board**, correctness matters — 
    `TBD (verify)`.
 6. **Confirm before delete/bulk** — preview + explicit approval.
 
-## Language
-Reply in the team's language. Resolution: `.kaneo/context.md` `language:` (local) → `KANEO_LANG`
-env → global config (`get_user_preferences`) → ask once (auto-infer from board + docs) and persist.
+## Format contract (make cards render)
+Kaneo renders descriptions as markdown (GFM). Single newlines collapse. Use blank lines between
+blocks; GFM tables for tabular data; fenced code blocks for formulas/code; numbered/bullet/task
+lists; `###` headings. No raw HTML, no stray Word glyphs (never leave a `§` — write "section N").
+Full contract + templates: `skills/kaneo/templates.md`.
+
+## Language (board-content language)
+Write card content (titles, descriptions, comments) and replies in the **team's language**.
+Resolution: `.kaneo/context.md` `language:` (local) → `KANEO_LANG` env → global config
+(`get_user_preferences`) → infer from the board + README and ask once, then persist
+(`set_user_preferences` for global, `.kaneo/context.md` for project). Default English. Technical
+tokens (identifiers, endpoints, code) stay as-is.
 
 ## Project context memory
 If `.kaneo/context.md` exists, read it first and follow its board map, language, stack, and
-templates. If it doesn't, suggest `/kaneo-setup`. After each create/status-change/completion, append
-to its Activity log.
-
-## Skills (12)
-| Situation | Skill |
-|-----------|-------|
-| First-time setup / onboarding in a repo | `/kaneo-setup` |
-| Create a new task | `/kaneo-create` |
-| Documentation-grade card from code/spec | `/kaneo-document` |
-| Review a board / health check | `/kaneo-review` |
-| Move a task's status | `/kaneo-move` |
-| Mark task(s) done (evidence-based) | `/kaneo-done` |
-| Find tasks | `/kaneo-search` |
-| Daily standup report | `/kaneo-standup` |
-| Sprint planning | `/kaneo-sprint` |
-| Close a sprint | `/kaneo-close-sprint` |
-| Reconcile board with git/PRs/code | `/kaneo-sync` |
-
-Assigning is handled inside `/kaneo-create` and `/kaneo-move` (resolve userId via
-`list_workspace_members`).
+templates. If it doesn't, offer the setup workflow. After each create/status-change/completion,
+append to its Activity log. Format: `skills/kaneo/context-memory.md`.
 
 ## Staying up to date
 On startup the server checks npm for a newer version. If one exists, the server's instructions and
-a `check_for_updates` tool report it — tell the user to run `npx -y @sadamdi/kaneo-mcp@latest` and
-restart their client before continuing.
+the `check_for_updates` tool report it — tell the user to run `npx -y @sadamdi/kaneo-mcp@latest`
+and restart their client before continuing.
 
 ## If tools aren't available
 `mcp__kaneo__*` tools missing → ask the user to register/restart the MCP server (see README).

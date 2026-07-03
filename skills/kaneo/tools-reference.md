@@ -1,4 +1,4 @@
-# Tools Reference — all 90 Kaneo MCP tools
+# Tools Reference — all 102 Kaneo MCP tools
 
 Every tool the `@sadamdi/kaneo-mcp` server exposes, grouped by domain. Tool names below are the
 bare names; in most clients they appear as `mcp__kaneo__<name>`. Params marked `?` are optional.
@@ -17,22 +17,33 @@ bare names; in most clients they appear as `mcp__kaneo__<name>`. Params marked `
 ## Projects (7)
 `list_projects` (—) · `get_project {id}` (includes tasks) · `create_project {workspaceId?, name, slug, icon?, description?}` · `update_project {id, name?, description?, icon?}` · `archive_project {id}` · `unarchive_project {id}` · `delete_project {id}` (destructive — confirm).
 
-## Tasks (13)
+## Tasks (15)
 | Tool | Params | Notes |
 |------|--------|-------|
-| `list_tasks` | `{projectId}` | Quick list |
+| `list_tasks` | `{projectId}` | Returns `{data, pagination}` — all tasks in one page |
 | `get_task` | `{id}` | Read before every update |
-| `create_task` | `{projectId, title, description?, status?, priority?, dueDate?, userId?}` | status defaults `to-do` |
-| `update_task` | `{id, title?, description?, status?, priority?, dueDate?}` | Merge — read first |
+| `create_task` | `{projectId, title, description?, status?, priority?, startDate?, dueDate?, userId?}` | status defaults `to-do` |
+| `update_task` | `{id, title?, description?, status?, priority?, startDate?, dueDate?}` | **Reads first and merges the full body** (projectId+position preserved) — partial updates are safe |
 | `set_task_status` | `{id, status}` | status: `to-do`/`in-progress`/`in-review`/`done` |
 | `set_task_priority` | `{id, priority}` | `no-priority`/`low`/`medium`/`high`/`urgent` |
 | `set_task_assignee` | `{id, userId}` | userId from `list_workspace_members` |
 | `set_task_due_date` | `{id, dueDate}` | ISO 8601 |
+| `set_task_dates` | `{id, startDate?, dueDate?}` | Set start and/or due date (merge) |
 | `move_task` | `{id, destinationProjectId, destinationStatus?}` | Cross-project move |
 | `delete_task` | `{id}` | Destructive — confirm |
 | `import_tasks` | `{projectId, tasks[]}` | Bulk create |
 | `export_tasks` | `{projectId}` | **Can be huge** — analyse with Python/jq |
 | `bulk_update_tasks` | `{taskIds[], operation, value?}` | operation: status/priority/assignee/delete — preview + confirm |
+
+## Task relations & workflow rules (6)
+| Tool | Params | Notes |
+|------|--------|-------|
+| `list_task_relations` | `{taskId}` | Dependencies/links for a task |
+| `create_task_relation` | `{sourceTaskId, targetTaskId, relationType}` | relationType e.g. `blocks`/`blocked_by`/`relates_to`/`duplicates` |
+| `delete_task_relation` | `{id}` | Destructive — confirm |
+| `list_workflow_rules` | `{projectId}` | Automation rules for a board |
+| `upsert_workflow_rule` | `{projectId, integrationType, eventType, columnId}` | Event → move to column |
+| `delete_workflow_rule` | `{id}` | Destructive — confirm |
 
 ## Columns (5)
 `list_columns {projectId}` · `create_column {projectId, name, icon?, color?, isFinal?}` · `reorder_columns {projectId, columns[{id,position}]}` · `update_column {id, name?, icon?, color?}` · `delete_column {id}`.
@@ -58,11 +69,12 @@ bare names; in most clients they appear as `mcp__kaneo__<name>`. Params marked `
 ## Preferences (2)
 `get_user_preferences` → `{language, source, stored}` · `set_user_preferences {language?, workspaceId?}` → persists to `~/.config/kaneo-mcp/config.json`. For project/team language, edit `.kaneo/context.md` instead.
 
-## Integrations (27)
+## Integrations (31)
 Per-project connectors; all take `{projectId, …}`.
 - **GitHub (8)**: `get_github_app_info` · `list_github_repositories` · `verify_github_repository {repositoryOwner, repositoryName}` · `get_github_integration {projectId}` · `connect_github_integration {projectId, repositoryOwner, repositoryName}` · `update_github_integration {projectId, isActive?, commentTaskLinkOnGitHubIssue?}` · `disconnect_github_integration {projectId}` · `import_github_issues {projectId}`.
 - **Gitea (7)**: `list_gitea_repositories {baseUrl, accessToken}` · `verify_gitea_repository {…}` · `get/connect/update/disconnect_gitea_integration` · `import_gitea_issues {projectId}`.
 - **Discord (4)** / **Slack (4)** / **Webhook (4)**: `get/connect/update/disconnect_<x>_integration {projectId, webhookUrl?, events?, …}`.
+- **Telegram (4)**: `get/connect/update/disconnect_telegram_integration {projectId, botToken?, chatId?, threadId?, chatLabel?, events?}`.
 
 ## Big-response recipe (export_tasks / activity)
 ```python

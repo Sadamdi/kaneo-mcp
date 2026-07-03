@@ -1,8 +1,39 @@
 import { z } from "zod";
 import { kaneo } from "../kaneoClient.js";
+import { config } from "../config.js";
 import type { ToolDef } from "../toolTypes.js";
 
 const priorityEnum = z.enum(["no-priority", "low", "medium", "high", "urgent"]).optional();
+
+interface TaskRecord {
+  title?: string;
+  description?: string;
+  status?: string;
+  priority?: string;
+  projectId?: string;
+  position?: number;
+  startDate?: string | null;
+  dueDate?: string | null;
+  userId?: string | null;
+}
+
+async function mergeUpdate(id: string, patch: Record<string, unknown>): Promise<unknown> {
+  const query = config.defaultWorkspaceId ? { workspaceId: config.defaultWorkspaceId } : undefined;
+  const current = (await kaneo.get(`/task/${id}`, query)) as TaskRecord;
+  const body: Record<string, unknown> = {
+    title: current.title,
+    description: current.description,
+    status: current.status,
+    priority: current.priority,
+    projectId: current.projectId,
+    position: current.position,
+    startDate: current.startDate ?? undefined,
+    dueDate: current.dueDate ?? undefined,
+  };
+  if (current.userId) body.userId = current.userId;
+  for (const [k, v] of Object.entries(patch)) if (v !== undefined) body[k] = v;
+  return kaneo.put(`/task/${id}`, body);
+}
 
 export const taskTools: ToolDef[] = [
   {
@@ -15,7 +46,8 @@ export const taskTools: ToolDef[] = [
     name: "get_task",
     description: "Get a single task by ID.",
     schema: { id: z.string() },
-    handler: async ({ id }: { id: string }) => kaneo.get(`/task/${id}`),
+    handler: async ({ id }: { id: string }) =>
+      kaneo.get(`/task/${id}`, config.defaultWorkspaceId ? { workspaceId: config.defaultWorkspaceId } : undefined),
   },
   {
     name: "create_task",
@@ -26,25 +58,27 @@ export const taskTools: ToolDef[] = [
       description: z.string().optional(),
       status: z.string().optional().describe("Status/column key, e.g. 'to-do', 'in-progress', 'done'. Defaults to 'to-do'."),
       priority: priorityEnum,
+      startDate: z.string().optional().describe("ISO 8601 date string"),
       dueDate: z.string().optional().describe("ISO 8601 date string"),
       userId: z.string().optional().describe("User ID to assign the task to"),
     },
-    handler: async ({ projectId, ...body }: { projectId: string; title: string; description?: string; status?: string; priority?: string; dueDate?: string; userId?: string }) =>
-      kaneo.post(`/task/${projectId}`, { status: "to-do", ...body }),
+    handler: async ({ projectId, ...body }: { projectId: string; title: string; description?: string; status?: string; priority?: string; startDate?: string; dueDate?: string; userId?: string }) =>
+      kaneo.post(`/task/${projectId}`, { status: "to-do", description: "", priority: "medium", ...body }),
   },
   {
     name: "update_task",
-    description: "Update a task's title, description, status, priority, or due date in one call.",
+    description: "Update a task's title, description, status, priority, start date, or due date. Reads the task first and merges, so partial updates are safe and other fields are preserved.",
     schema: {
       id: z.string(),
       title: z.string().optional(),
       description: z.string().optional(),
       status: z.string().optional(),
       priority: priorityEnum,
-      dueDate: z.string().optional(),
+      startDate: z.string().optional().describe("ISO 8601 date string"),
+      dueDate: z.string().optional().describe("ISO 8601 date string"),
     },
-    handler: async ({ id, ...body }: { id: string; title?: string; description?: string; status?: string; priority?: string; dueDate?: string }) =>
-      kaneo.put(`/task/${id}`, body),
+    handler: async ({ id, ...patch }: { id: string; title?: string; description?: string; status?: string; priority?: string; startDate?: string; dueDate?: string }) =>
+      mergeUpdate(id, patch),
   },
   {
     name: "set_task_status",
@@ -69,6 +103,16 @@ export const taskTools: ToolDef[] = [
     description: "Set or change a task's due date.",
     schema: { id: z.string(), dueDate: z.string().describe("ISO 8601 date string") },
     handler: async ({ id, dueDate }: { id: string; dueDate: string }) => kaneo.put(`/task/due-date/${id}`, { dueDate }),
+  },
+  {
+    name: "set_task_dates",
+    description: "Set a task's start date and/or due date. Pass either or both (ISO 8601). Preserves all other fields.",
+    schema: {
+      id: z.string(),
+      startDate: z.string().optional().describe("ISO 8601 date string"),
+      dueDate: z.string().optional().describe("ISO 8601 date string"),
+    },
+    handler: async ({ id, ...patch }: { id: string; startDate?: string; dueDate?: string }) => mergeUpdate(id, patch),
   },
   {
     name: "move_task",

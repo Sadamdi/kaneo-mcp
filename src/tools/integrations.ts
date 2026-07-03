@@ -186,4 +186,30 @@ export const integrationTools: ToolDef[] = [
     schema: { projectId: z.string() },
     handler: async ({ projectId }: { projectId: string }) => kaneo.delete(`/generic-webhook-integration/project/${projectId}`),
   },
+  {
+    name: "get_telegram_integration",
+    description: "Get the Telegram bot integration configured for a project.",
+    schema: { projectId: z.string() },
+    handler: async ({ projectId }: { projectId: string }) => kaneo.get(`/telegram-integration/project/${projectId}`),
+  },
+  {
+    name: "connect_telegram_integration",
+    description: "Connect a Telegram bot to a project for event notifications.",
+    schema: { projectId: z.string(), botToken: z.string(), chatId: z.string(), threadId: z.number().optional(), chatLabel: z.string().optional(), events: z.object(eventFlags).optional() },
+    handler: async ({ projectId, ...body }: { projectId: string; botToken: string; chatId: string; threadId?: number; chatLabel?: string; events?: Record<string, boolean> }) =>
+      kaneo.post(`/telegram-integration/project/${projectId}`, body),
+  },
+  {
+    name: "update_telegram_integration",
+    description: "Update a project's Telegram bot integration.",
+    schema: { projectId: z.string(), botToken: z.string().optional(), chatId: z.string().optional(), threadId: z.number().optional(), chatLabel: z.string().optional(), isActive: z.boolean().optional(), events: z.object(eventFlags).optional() },
+    handler: async ({ projectId, ...body }: { projectId: string; [key: string]: unknown }) =>
+      kaneo.patch(`/telegram-integration/project/${projectId}`, body),
+  },
+  {
+    name: "disconnect_telegram_integration",
+    description: "Remove the Telegram integration from a project.",
+    schema: { projectId: z.string() },
+    handler: async ({ projectId }: { projectId: string }) => kaneo.delete(`/telegram-integration/project/${projectId}`),
+  },
 ];

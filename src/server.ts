@@ -14,6 +14,7 @@ import { timeEntryTools } from "./tools/timeEntries.js";
 import { assetTools } from "./tools/assets.js";
 import { integrationTools } from "./tools/integrations.js";
 import { workspaceTools } from "./tools/workspaces.js";
+import { relationTools } from "./tools/relations.js";
 import { preferenceTools } from "./tools/preferences.js";
 import { updateTools } from "./tools/updates.js";
 import { checkForUpdate, currentVersion } from "./version.js";
@@ -22,8 +23,8 @@ function buildInstructions(updateNote: string): string {
   const lang = config.language;
   const languageLine =
     lang === "unset"
-      ? "The user has NOT chosen a working language yet. On the first interaction, ask them to choose: English (default), Bahasa Indonesia, or any other language — and whether to save it globally (set_user_preferences) or for this project only (.kaneo/context.md). Then never ask again."
-      : `The user's preferred working language is "${lang}". Produce ALL user-facing output in this language (a project-level .kaneo/context.md 'language:' field overrides this).`;
+      ? "The team's board language is NOT set yet. On the first interaction, infer it from existing card content and the repo README, propose it, and ask whether to save it globally (set_user_preferences) or for this project only (.kaneo/context.md 'language:'). Then never ask again. Default to English if unclear."
+      : `Write all content you submit to Kaneo (task titles, descriptions, comments) and your user-facing replies in "${lang}". A project-level .kaneo/context.md 'language:' field overrides this. Technical tokens (identifiers, endpoints, code) stay as-is.`;
 
   return [
     "You are operating the Kaneo project-management board through this MCP server.",
@@ -39,7 +40,9 @@ function buildInstructions(updateNote: string): string {
     "5. Evidence rule: any endpoint, file path, schema, or component you write into a task MUST be verified in the actual codebase first; if unverifiable, mark it 'TBD (verify)' rather than inventing plausible details.",
     "6. Confirm before delete or bulk change: show a listed preview and get explicit user approval.",
     "",
-    "PROJECT CONTEXT: if a .kaneo/context.md file exists in the working repo, read it first and follow its language, board mapping, project stack, and templates. Detailed workflows live in this package's skills/ directory (install with `npx @sadamdi/kaneo-mcp skills`).",
+    "FORMAT (Kaneo renders descriptions as GFM markdown — single newlines collapse): put a blank line between blocks; use GFM tables for tabular data; fenced code blocks for formulas/code/ASCII; numbered/bullet/task lists for steps and checklists; ### headings for sections. No raw HTML and no stray Word glyphs (never leave the section sign; write 'section 2.1'). When embedding a docx/pdf/spec, convert it to markdown first — complete content, structured, not raw paste.",
+    "",
+    "PROJECT CONTEXT: if a .kaneo/context.md file exists in the working repo, read it first and follow its language, board mapping, project stack, and templates. The full workflow (setup, create, document, move, done, review, search, standup, sprint, sync) lives in this package's single 'kaneo' skill (install with `npx @sadamdi/kaneo-mcp skills`).",
   ].join("\n");
 }
 
@@ -71,6 +74,7 @@ export async function startServer(): Promise<void> {
     ...timeEntryTools,
     ...assetTools,
     ...integrationTools,
+    ...relationTools,
     ...preferenceTools,
     ...updateTools,
   ];

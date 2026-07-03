@@ -1,7 +1,7 @@
 {
   "name": "@sadamdi/kaneo-mcp",
-  "version": "0.3.0",
-  "description": "MCP server for the full Kaneo API (91 tools) plus documentation-grade skills: project auto-detection, aligned card templates, shared project context memory, grounding rules, English/Indonesian/any language (global or per-project), and an interactive installer for Cursor, Claude Desktop, and Claude Code.",
+  "version": "0.4.0",
+  "description": "MCP server for the full Kaneo API (102 tools) plus a documentation-grade skill: project auto-detection, render-clean markdown card templates, shared project context memory, grounding rules, configurable board language (global or per-project), API-key or browser OAuth auth, self-hosted support, and an interactive installer for Cursor, Claude Desktop, and Claude Code.",
   "type": "module",
   "bin": {
     "kaneo-mcp": "dist/cli.js"
@@ -18,8 +18,7 @@
   "files": [
     "dist",
     "skills",
-    "AGENT.md",
-    "AGENT.id.md"
+    "AGENT.md"
   ],
   "scripts": {
     "build": "tsc",

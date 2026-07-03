@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync, existsSync } from "fs";
+import { mkdirSync, readFileSync, writeFileSync, existsSync, rmSync } from "fs";
 import { homedir } from "os";
 import { join } from "path";
 
@@ -27,6 +27,8 @@ export function saveCredentials(creds: StoredCredentials): void {
   writeFileSync(storePath, JSON.stringify(creds, null, 2), { mode: 0o600 });
 }
 
-export function clearCredentials(): void {
-  if (existsSync(storePath)) writeFileSync(storePath, "{}");
+export function clearCredentials(): boolean {
+  if (!existsSync(storePath)) return false;
+  rmSync(storePath);
+  return true;
 }

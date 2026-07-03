@@ -32,17 +32,22 @@ export async function runInstaller(): Promise<void> {
   }
 
   process.stdout.write(
-    "\nAuthentication: paste an API key (Settings -> Account -> Developer Settings -> API Keys)\n" +
-      "or leave blank to sign in with your browser instead.\n"
+    "\nAuthentication (two options):\n" +
+      "  - Paste an API key (Settings -> Account -> Developer Settings -> API Keys), or\n" +
+      "  - Leave blank to sign in with your browser on first use (device flow).\n"
   );
   const apiKey = (await ask(rl, "API key (optional): ")).trim();
   const workspaceId = (await ask(rl, "Workspace ID (optional, from the Kaneo URL): ")).trim();
+  process.stdout.write(
+    "\nKaneo API base URL — press Enter for Kaneo Cloud, or enter your self-hosted URL\n" +
+      "(e.g. https://kaneo.mycompany.com/api).\n"
+  );
   const baseUrl = (
-    await ask(rl, "Kaneo API base URL [https://cloud.kaneo.app/api]: ")
+    await ask(rl, "Base URL [https://cloud.kaneo.app/api]: ")
   ).trim();
 
   process.stdout.write(
-    "\nPreferred language for the AI's replies:\n" +
+    "\nLanguage for content written to Kaneo (task titles, descriptions, comments) and replies:\n" +
       "  1) English (default)\n" +
       "  2) Bahasa Indonesia\n" +
       "  3) other — type an ISO code or language name\n"
