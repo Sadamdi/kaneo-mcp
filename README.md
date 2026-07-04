@@ -101,20 +101,41 @@ Drop that block into:
 
 Omit the `env` block entirely to use browser sign-in instead of an API key.
 
-## Set it up by talking to your AI instead
+## Set it up by talking to your AI (one prompt does everything)
 
-Copy this into any AI assistant with terminal or file access (Claude, Cursor, Cline, Codex, etc.):
+Copy this into any AI with terminal + file access (Claude Code, Cursor, Cline, Codex, …). It
+registers the MCP server, installs the skills, runs first-time project setup, and turns on
+auto-sync (so from then on the AI keeps your Kaneo board updated as you work). Fill the
+`[brackets]`:
 
 ```
-Set up the kaneo-mcp MCP server for me. Run `npx @sadamdi/kaneo-mcp` in an interactive
-terminal and follow its prompts (or add an mcpServers entry named "kaneo" with
-command "npx", args ["-y", "@sadamdi/kaneo-mcp", "serve"], to whichever client config
-you detect I'm using — Cursor, Claude Desktop, or Claude Code). My Kaneo API key is
-[PASTE_KEY_HERE] and my workspace ID is [PASTE_WORKSPACE_ID_HERE] — set those as
-KANEO_API_KEY and KANEO_WORKSPACE_ID in the env block. If I didn't give you a key,
-leave the env block without KANEO_API_KEY so I can sign in via browser on first use.
-Tell me to restart the client afterward, then verify by calling the list_projects tool.
+Set up Kaneo for this project — MCP server, skills, and auto-sync.
+
+1. Register the MCP server if it isn't already. Detect my client (Cursor .cursor/mcp.json,
+   Claude Desktop config, or Claude Code .mcp.json) and add an "mcpServers" entry named "kaneo":
+   command "npx", args ["-y", "@sadamdi/kaneo-mcp", "serve"], env:
+     - KANEO_API_KEY     = [PASTE_KEY or leave out to sign in via `npx @sadamdi/kaneo-mcp login`]
+     - KANEO_WORKSPACE_ID = [PASTE_WORKSPACE_ID or omit]
+     - KANEO_BASE_URL     = [omit for cloud, or https://your-instance/api for self-hosted]
+2. Install the skills into this repo: run `npx @sadamdi/kaneo-mcp skills`.
+3. Run /kaneo-setup: auto-detect this repo's stack, infer the board language, confirm the
+   project<->board mapping, and write .kaneo/context.md.
+4. Turn on auto-sync: append this rule to my agent instructions (CLAUDE.md or AGENTS.md at the
+   repo root, or a .cursor/rules/kaneo.mdc file) so every future session follows it —
+   "Kaneo board sync: read .kaneo/context.md first. Whenever you make a meaningful change, add a
+   feature, fix a bug, or start new work in this repo, automatically create or update the matching
+   Kaneo task with the kaneo skills (/kaneo-create or /kaneo-document), move its status as work
+   progresses (/kaneo-move), and mark it done when finished (/kaneo-done). Never invent IDs; verify
+   after writing."
+
+Overrides: [LANGUAGE: auto | en | id | <any>]  [SCOPE: local | global]  [BOARD: auto | <name>].
+Then tell me to restart the client, and verify by calling the list_projects tool.
 ```
+
+That's the whole thing — after it runs, just work normally and the AI files/updates Kaneo tasks for
+you. Details on each piece are in [Skills](#skills-documentation-grade-board-management),
+[Auto-sync](#auto-sync-keep-the-board-updated-as-you-work), and
+[Language support](#language-support) below.
 
 ## Available tools (102)
 
@@ -194,31 +215,34 @@ contract, project-detection, context-memory, language, and the full 102-tool ref
 to your AI naturally ("buatkan task…", "set up kaneo here", "what's our standup?") and it routes to
 the right skill.
 
+## Auto-sync (keep the board updated as you work)
+
+The skills are on-demand, but you can make the board update **automatically** — every meaningful
+change or new task lands on Kaneo without you asking. It works because AI coding agents read a rules
+file at the start of every session:
+
+1. `npx @sadamdi/kaneo-mcp skills` installs the skills **and** an `AGENT.md` (into `.claude/`) that
+   already contains an **"Auto-sync the board"** rule.
+2. Point your agent's always-on instructions at it. Add one line to the file your client
+   auto-loads — `CLAUDE.md` / `AGENTS.md` at the repo root, or a `.cursor/rules/kaneo.mdc` (Cursor):
+
+   > **Kaneo board sync.** Read `.kaneo/context.md` first. Whenever you make a meaningful change,
+   > add a feature, fix a bug, or start new work in this repo, automatically create or update the
+   > matching Kaneo task (`/kaneo-create` or `/kaneo-document`), move its status as work progresses
+   > (`/kaneo-move`), and mark it done when finished (`/kaneo-done`). Follow `.claude/AGENT.md`.
+
+   The one-prompt setup above does this step for you (step 4).
+
+From then on: implement a feature → a `to-do`/`in-progress` card appears; open a PR → it moves to
+`in-review`; merge → `done` — grounded (never invents IDs) and in your board language. Because the
+rule lives in a committed file, every teammate's AI behaves the same.
+
 ## Project context (`.kaneo/context.md`)
 
 `/kaneo-setup` writes a committed `.kaneo/context.md` at your repo root. It records the team
 language, workspace/board map, detected stack per sub-project, template variants, label taxonomy,
 and an activity log. Every skill reads it first, so your AI (and your whole team's AIs) stay
 consistent and remember context across sessions. Commit it to share; edit any field manually.
-
-## Set it up by talking to your AI (skill-aware)
-
-Fill the bracketed overrides, then paste into any AI with terminal/file access:
-
-```
-Set up Kaneo for this project.
-1. If the kaneo MCP server isn't registered, add it: command "npx", args ["-y",
-   "@sadamdi/kaneo-mcp", "serve"], with env:
-   - KANEO_BASE_URL = [URL: cloud | https://your-instance/api]   (omit for cloud)
-   - auth = [AUTH: apikey <key> | browser]   (apikey -> set KANEO_API_KEY=<key>; browser -> leave
-     it out and run `npx @sadamdi/kaneo-mcp login`)
-   - KANEO_WORKSPACE_ID = [optional]
-2. Install the skills: run `npx @sadamdi/kaneo-mcp skills`.
-3. Run /kaneo-setup: auto-detect this repo's stack, infer our team's language from the
-   board and docs, confirm the project↔board mapping, and write .kaneo/context.md.
-Overrides: [LANGUAGE: auto | en | id | <any>]  [SCOPE: local | global]  [BOARD: auto | <name>].
-Then restart the client and verify by calling list_projects.
-```
 
 ## Staying up to date
 

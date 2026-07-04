@@ -39,6 +39,19 @@ If `.kaneo/context.md` exists, read it first and follow its board map, language,
 templates. If it doesn't, run `/kaneo-setup`. After each create / status change / completion, append
 to its Activity log. Format: `skills/_shared/context-memory.md`.
 
+## Auto-sync the board (always-on)
+Keep Kaneo in sync with the work as it happens — don't wait to be asked:
+- **New work / feature / bug / meaningful change** → create or update the matching task
+  (`/kaneo-create` for a quick task, `/kaneo-document` for a documentation-grade card verified
+  against the code). Search first so you update instead of duplicating.
+- **Work progresses** → move the status (`/kaneo-move`): `to-do` → `in-progress` when you start,
+  `in-review` when a PR opens (add the PR link as a comment), `done` when it's merged/shipped
+  (`/kaneo-done`, after the acceptance-criteria check).
+- **Link related work** with `create_task_relation`.
+Do all of this grounded (never invent IDs; verify after writing) and in the team's board language.
+Teams turn this on by pointing their always-on agent rules (CLAUDE.md / AGENTS.md / a Cursor rule)
+at this file — see the README "Auto-sync" section.
+
 ## Skills (10)
 | Situation | Skill |
 |-----------|-------|
