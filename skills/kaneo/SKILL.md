@@ -57,8 +57,8 @@ it collapses into unreadable paragraphs. Every description you write MUST obey:
   language tag when it's real code (```` ```go ````).
 - **Steps/flows → numbered lists**; enumerations → bullet lists; checklists → `- [ ]` task lists.
 - **Section titles → `###` / `####` headings.**
-- **No raw HTML.** No stray Word glyphs — never leave the section sign `§` or smart quotes;
-  write "section 2.1", and turn a `§11 Dashboard` heading into `### 11. Dashboard`.
+- **No raw HTML.** No stray Word glyphs — never leave the section-sign character or smart quotes;
+  write "section 2.1" in words, and turn a "Section 11 Dashboard" line into `### 11. Dashboard`.
 - When embedding an external doc (docx/pdf/spec), **convert it to markdown first** — "complete"
   means all the content, structured, not raw pasted formatting.
 
@@ -188,8 +188,8 @@ Use when turning code or a spec into a rich card that reads like real documentat
    handler/service/repository files, DB tables/migrations, roles. Anything you can't confirm →
    `TBD (verify)`.
 3. If embedding an external doc (docx/pdf/spec), convert it to markdown per the format contract —
-   tables become GFM tables, formulas become fenced blocks, section numbers become headings, drop
-   `§`. Keep the content complete; only fix the formatting.
+   tables become GFM tables, formulas become fenced blocks, section numbers become headings, and
+   stray Word glyphs are removed. Keep the content complete; only fix the formatting.
 4. Search for an existing card first; if found, **enrich** it (get_task → merge → update_task).
 5. Create/update with the full template body, attach `backend`/`frontend`/… + a type label,
    verify, and log it.

@@ -1,6 +1,6 @@
 {
   "name": "@sadamdi/kaneo-mcp",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "MCP server for the full Kaneo API (102 tools) plus a documentation-grade skill: project auto-detection, render-clean markdown card templates, shared project context memory, grounding rules, configurable board language (global or per-project), API-key or browser OAuth auth, self-hosted support, and an interactive installer for Cursor, Claude Desktop, and Claude Code.",
   "type": "module",
   "bin": {

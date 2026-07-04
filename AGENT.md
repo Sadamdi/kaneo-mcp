@@ -27,7 +27,7 @@ it: `templates.md` (card templates + the markdown format contract), `tools-refer
 ## Format contract (make cards render)
 Kaneo renders descriptions as markdown (GFM). Single newlines collapse. Use blank lines between
 blocks; GFM tables for tabular data; fenced code blocks for formulas/code; numbered/bullet/task
-lists; `###` headings. No raw HTML, no stray Word glyphs (never leave a `§` — write "section N").
+lists; `###` headings. No raw HTML, no stray Word glyphs (write "section N" in words).
 Full contract + templates: `skills/kaneo/templates.md`.
 
 ## Language (board-content language)

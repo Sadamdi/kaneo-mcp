@@ -25,7 +25,7 @@ mush. So:
 | Emphasis | `**bold**`, `*italic*`, `` `inline code` `` |
 
 **Never:**
-- Leave the section sign `§` — write "section 2.1"; turn `§11 Dashboard` into `### 11. Dashboard`.
+- Leave the section-sign character or other Word glyphs — write "section 2.1" in words; turn a "Section 11 Dashboard" line into `### 11. Dashboard`.
 - Leave smart quotes / other Word glyphs from a docx paste.
 - Paste raw HTML.
 - Paste a docx/spreadsheet block unconverted. **Convert to markdown first.** "Complete" means all
