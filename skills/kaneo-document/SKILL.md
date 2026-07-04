@@ -41,7 +41,9 @@ Use the full template + header block from `_shared/templates.md`:
 > **Source**: <doc path or code refs>
 ```
 then Context / Scope / Acceptance criteria / Technical notes (verified endpoints, files, DB, roles) /
-Flow / Links / DoD. Write it in the team's board language.
+Flow / Links / DoD. Apply the visual-polish rules from `_shared/templates.md` (blockquote callouts,
+GFM tables for endpoints/schema, fenced code for formulas/JSON, task-list criteria, `---` dividers).
+Write it in the team's board language.
 
 ## Step 6: Create/update, label, verify, log
 ```

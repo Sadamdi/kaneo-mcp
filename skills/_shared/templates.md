@@ -8,28 +8,46 @@ render); Part 2 is the **card structure**; Part 3 is **per-type technical notes*
 
 ## Part 1 — Format contract (non-negotiable)
 
-Kaneo renders descriptions as markdown (TipTap + GFM: tables, fenced code with highlighting,
-headings, ordered/unordered/task lists, blockquotes, links). Raw multi-line text collapses into
-mush. So:
+Kaneo renders descriptions with a TipTap + GFM markdown editor. The **full set of constructs that
+render** (verified live) — use them; raw multi-line text collapses into mush:
 
 | Content | Write it as |
 |---|---|
 | Two paragraphs | Separated by a **blank line** (single newlines collapse) |
-| Any tabular data (variables, scenarios, RACI, endpoints) | **GFM table** with a `|---|` row |
+| Section titles | `##` / `###` / `####` headings (structure the card) |
+| Any tabular data (variables, scenarios, RACI, endpoints) | **GFM table** with a `|---|` row (inline code allowed in cells) |
 | Formula / calculation / pseudo-code / ASCII layout | **Fenced code block** ```` ``` ```` |
-| Real source code | Fenced block with a language tag ```` ```go ```` |
-| A sequence of steps / a flow | **Numbered list** |
-| A set of items | **Bullet list** |
-| A checklist / acceptance criteria | **Task list** `- [ ]` / `- [x]` |
-| A section title | `###` or `####` heading |
-| Emphasis | `**bold**`, `*italic*`, `` `inline code` `` |
+| Real source code | Fenced block with a language tag ```` ```go ```` (syntax-highlighted) |
+| A sequence of steps / a flow | **Numbered list** (nesting with 3-space indent works) |
+| A set of items | **Bullet list** (nesting with 2-space indent works) |
+| A checklist / acceptance criteria | **Task list** `- [ ]` / `- [x]` (renders as checkboxes) |
+| A note / warning / callout | **Blockquote** `>` (great for "Note:", "Warning:", assumptions) |
+| Section divider | Horizontal rule `---` on its own line |
+| Emphasis | `**bold**`, `*italic*`, `~~strikethrough~~`, `` `inline code` `` |
+| Link | `[text](url)` |
+| Image / screenshot | `![alt](url)` (renders inline) |
+| Status / priority marker | Emoji as plain text — `🔴 urgent · 🟠 high · 🟡 medium · ⚪ low · ✅ done` |
 
 **Never:**
 - Leave the section-sign character or other Word glyphs — write "section 2.1" in words; turn a "Section 11 Dashboard" line into `### 11. Dashboard`.
 - Leave smart quotes / other Word glyphs from a docx paste.
-- Paste raw HTML.
+- Paste raw HTML (it won't render).
 - Paste a docx/spreadsheet block unconverted. **Convert to markdown first.** "Complete" means all
   the content, structured — not raw formatting.
+
+## Part 1b — Visual polish (make the card easy to read)
+
+Within the safe palette above, a good card *looks* good:
+- **Lead with the header block**, then `## Context` — the reader sees the point in 2 seconds.
+- **Acceptance criteria as a task list** (`- [ ]`) so progress is visibly checkable, not prose.
+- **Blockquote callouts** for anything that must not be missed:
+  `> **⚠️ Warning.** …` · `> **📌 Note.** …` · `> **✅ Verified.** …` (one bold lead word + text).
+- **Tables over comma-lists** for anything with 2+ columns (endpoints, fields, RACI, scenarios).
+- **Fenced code for every formula/schema/CLI/JSON** — with a language tag when it's real code so it
+  gets syntax colors.
+- **`---` dividers** only between major sections of a long card (don't sprinkle them).
+- **Emoji sparingly** — status/priority markers and one per callout; not decoration on every line.
+- Keep line-level noise low: bold the **label**, plain text the value (`**Role**: Pengurus`).
 
 ---
 
@@ -126,7 +144,10 @@ AREA (`frontend`/`backend`/`mobile`/`infra`/`data`/`design`).
 
 ---
 
-## Part 4 — Filled example (backend, render-clean)
+## Part 4 — Filled example (backend, polished + render-clean)
+
+This shows the polish rules in action: header block, callout, task-list criteria, a table, and
+fenced formula/code — all inside Kaneo's safe palette.
 
 ````markdown
 > **Repo**: `koperasi-shu-backend`  ·  **Area**: backend  ·  **Type**: feature  ·  **Status**: to-do
@@ -135,6 +156,9 @@ AREA (`frontend`/`backend`/`mobile`/`infra`/`data`/`design`).
 ## Context
 Compute each member's SHU by combining the traditional pool (savings + loan proportion) with a
 contribution-point bonus pool, then summing them.
+
+> **📌 Note.** Money is `DECIMAL(18,2)` — never float. Round with **floor** only at the very end;
+> the remainder goes to the reserve fund.
 
 ## Acceptance criteria
 - [ ] Pool split validates `pct_tradisional + pct_bonus_poin = 100%`
@@ -146,9 +170,9 @@ contribution-point bonus pool, then summing them.
 ### Pool split
 
 ```
-Total_Dana_SHU_Anggota = SHU_Kotor × pct_anggota
-Pool_Tradisional       = Total_Dana_SHU_Anggota × pct_tradisional   // ex: 80%
-Pool_Bonus_Poin        = Total_Dana_SHU_Anggota × pct_bonus_poin     // ex: 20%
+Total_Dana_SHU_Anggota = SHU_Kotor x pct_anggota
+Pool_Tradisional       = Total_Dana_SHU_Anggota x pct_tradisional   // ex: 80%
+Pool_Bonus_Poin        = Total_Dana_SHU_Anggota x pct_bonus_poin     // ex: 20%
 ```
 
 ### Worked example
@@ -159,10 +183,13 @@ Pool_Bonus_Poin        = Total_Dana_SHU_Anggota × pct_bonus_poin     // ex: 20%
 | Siti   | Rp 80.000.000 | Rp 120.000.000 | 1.200 | Rp 68.800.000 |
 
 ### Endpoints
-- `POST /api/shu/periods/{id}/calculate` — body `{ pct_tradisional, pct_bonus_poin }`, role: Pengurus.
+
+| Method | Path | Body | Role |
+|--------|------|------|------|
+| `POST` | `/api/shu/periods/{id}/calculate` | `{ pct_tradisional, pct_bonus_poin }` | Pengurus |
 
 ## Definition of Done
-Merged + unit test green + Swagger updated + card moved to done.
+Merged + unit test green + Swagger updated + card moved to `done`.
 ````
 
 This is the default template. Teams may customize their locally installed copy of this file.

@@ -76,11 +76,13 @@ Pick a sensible color based on the label name:
 
 Don't leave the description as a one-liner. Pick the template that matches the project type (from
 `.kaneo/context.md` / `_shared/project-detection.md`) in `_shared/templates.md` and follow the
-**format contract** there:
+**format contract + visual-polish** rules there:
 - Kaneo renders markdown — put a blank line between blocks.
 - Tables → GFM tables; formulas/schemas/code → fenced code blocks; steps → numbered lists;
   acceptance criteria → `- [ ]` checkboxes; sections → `###` headings.
-- No raw HTML, no stray Word glyphs.
+- Polish: blockquote callouts (`> **📌 Note.** …`) for must-not-miss points, a table whenever
+  there are 2+ columns, `---` dividers between major sections of a long card, and status emoji
+  sparingly. No raw HTML, no stray Word glyphs.
 For a documentation-grade card verified against code, use `/kaneo-document` instead.
 
 ### Step 5: Create the Task

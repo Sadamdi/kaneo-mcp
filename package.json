@@ -1,6 +1,6 @@
 {
   "name": "@sadamdi/kaneo-mcp",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "MCP server for the full Kaneo API (102 tools) plus 10 documentation-grade skills: project auto-detection, render-clean markdown card templates, related-task linking, shared project context memory, grounding rules, configurable board language (global or per-project), API-key or browser OAuth auth, self-hosted support, and an interactive installer for Cursor, Claude Desktop, and Claude Code.",
   "type": "module",
   "bin": {
@@ -11,7 +11,14 @@
     "url": "git+https://github.com/Sadamdi/kaneo-mcp.git"
   },
   "homepage": "https://github.com/Sadamdi/kaneo-mcp",
-  "keywords": ["mcp", "model-context-protocol", "kaneo", "project-management", "skills", "i18n"],
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "kaneo",
+    "project-management",
+    "skills",
+    "i18n"
+  ],
   "publishConfig": {
     "access": "public"
   },
