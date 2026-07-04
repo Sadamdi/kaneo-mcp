@@ -33,8 +33,8 @@ async function main(): Promise<void> {
     const target = flag("--target") === "user" ? "user" : "project";
     const dest = installSkills(target);
     process.stdout.write(
-      `Installed the Kaneo skill into ${dest}\n` +
-        "Restart your AI client, then ask it to set up Kaneo for this project.\n"
+      `Installed the Kaneo skills into ${dest}\n` +
+        "Restart your AI client, then run /kaneo-setup to configure this project.\n"
     );
     return;
   }

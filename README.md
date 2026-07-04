@@ -157,41 +157,49 @@ and any other language works too. There are two scopes:
 | Scope | Where | Applies to | How to set |
 |-------|-------|------------|-----------|
 | **Global** | `~/.config/kaneo-mcp/config.json` | all your projects, this machine | installer wizard, or `set_user_preferences`, or edit the file |
-| **Local** | `.kaneo/context.md` (`language:`) | this project/team (committed, shared) | the `kaneo` skill's setup, or edit the file |
+| **Local** | `.kaneo/context.md` (`language:`) | this project/team (committed, shared) | `/kaneo-setup`, or edit the file |
 | **Per-machine override** | `KANEO_LANG` env in the client config | this machine | edit the MCP config `env` |
 
 Resolution order (first wins): **local** `.kaneo/context.md` → `KANEO_LANG` → **global** config →
 if nothing is set, the AI infers your team's language from the board and docs, asks once, and saves
 it. Read the active language any time with `get_user_preferences`.
 
-## Skill (documentation-grade board management)
+## Skills (documentation-grade board management)
 
-One skill — **`kaneo`** — turns any AI into a grounded Kaneo teammate: consistent templates,
-project auto-detection, render-clean markdown, and no hallucinated data. It's written in English;
-the language it *writes on the board* is configurable (see [Language support](#language-support)).
-Install it into your AI client:
+Ten focused skills turn any AI into a grounded Kaneo teammate: consistent templates, project
+auto-detection, render-clean markdown, and no hallucinated data. The skill files are English; the
+language they *write onto the board* is configurable (see [Language support](#language-support)).
+Install them into your AI client:
 
 ```bash
 npx @sadamdi/kaneo-mcp skills                 # into ./.claude/skills (this project)
 npx @sadamdi/kaneo-mcp skills --target user   # into ~/.claude/skills (all projects)
 ```
 
-The single `kaneo` skill covers every workflow — setup/onboarding, create, document, move, mark
-done, review, search, standup, sprint planning, close-sprint, and sync — each with concrete
-`mcp__kaneo__*` call examples. Its reference files sit alongside it in `skills/kaneo/`:
-`templates.md` (card templates + the markdown format contract), `tools-reference.md`,
-`context-memory.md`, and `project-detection.md`.
+| Skill | Use it to |
+|-------|-----------|
+| `/kaneo-setup` | Onboard a repo: auto-detect stack, infer + set the board language, map boards, write `.kaneo/context.md` |
+| `/kaneo-create` | Create a well-formed task (title, acceptance criteria, labels, assignee, links to related tasks) |
+| `/kaneo-document` | Turn code/spec into a documentation-grade card (every claim verified in the code) |
+| `/kaneo-review` | Review a board + health checks (WIP, stale, unassigned, missing criteria) |
+| `/kaneo-move` | Change a task's status / project with the right semantics |
+| `/kaneo-done` | Close tasks with an evidence-based acceptance-criteria check |
+| `/kaneo-search` | Find tasks by keyword / status / assignee / label |
+| `/kaneo-standup` | Daily standup report grouped by person |
+| `/kaneo-sprint` | Sprint planning with team-capacity balancing |
+| `/kaneo-close-sprint` | Close a sprint (carry over, safe cleanup) |
 
-Just talk to your AI naturally ("create a task…", "set up kaneo here", "what's our standup?") and
-it routes to the right workflow.
+Shared references live in `skills/_shared/` (grounding, conventions, templates + the markdown format
+contract, project-detection, context-memory, language, and the full 102-tool reference). Just talk
+to your AI naturally ("buatkan task…", "set up kaneo here", "what's our standup?") and it routes to
+the right skill.
 
 ## Project context (`.kaneo/context.md`)
 
-The `kaneo` skill's setup workflow writes a committed `.kaneo/context.md` at your repo root. It
-records the team language, workspace/board map, detected stack per sub-project, template variants,
-label taxonomy, and an activity log. The skill reads it first, so your AI (and your whole team's
-AIs) stay consistent and remember context across sessions. Commit it to share; edit any field
-manually.
+`/kaneo-setup` writes a committed `.kaneo/context.md` at your repo root. It records the team
+language, workspace/board map, detected stack per sub-project, template variants, label taxonomy,
+and an activity log. Every skill reads it first, so your AI (and your whole team's AIs) stay
+consistent and remember context across sessions. Commit it to share; edit any field manually.
 
 ## Set it up by talking to your AI (skill-aware)
 
@@ -205,8 +213,8 @@ Set up Kaneo for this project.
    - auth = [AUTH: apikey <key> | browser]   (apikey -> set KANEO_API_KEY=<key>; browser -> leave
      it out and run `npx @sadamdi/kaneo-mcp login`)
    - KANEO_WORKSPACE_ID = [optional]
-2. Install the skill: run `npx @sadamdi/kaneo-mcp skills`.
-3. Run the kaneo skill's setup: auto-detect this repo's stack, infer our team's language from the
+2. Install the skills: run `npx @sadamdi/kaneo-mcp skills`.
+3. Run /kaneo-setup: auto-detect this repo's stack, infer our team's language from the
    board and docs, confirm the project↔board mapping, and write .kaneo/context.md.
 Overrides: [LANGUAGE: auto | en | id | <any>]  [SCOPE: local | global]  [BOARD: auto | <name>].
 Then restart the client and verify by calling list_projects.

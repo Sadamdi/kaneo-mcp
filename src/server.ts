@@ -42,7 +42,7 @@ function buildInstructions(updateNote: string): string {
     "",
     "FORMAT (Kaneo renders descriptions as GFM markdown — single newlines collapse): put a blank line between blocks; use GFM tables for tabular data; fenced code blocks for formulas/code/ASCII; numbered/bullet/task lists for steps and checklists; ### headings for sections. No raw HTML and no stray Word glyphs (never leave the section sign; write 'section 2.1'). When embedding a docx/pdf/spec, convert it to markdown first — complete content, structured, not raw paste.",
     "",
-    "PROJECT CONTEXT: if a .kaneo/context.md file exists in the working repo, read it first and follow its language, board mapping, project stack, and templates. The full workflow (setup, create, document, move, done, review, search, standup, sprint, sync) lives in this package's single 'kaneo' skill (install with `npx @sadamdi/kaneo-mcp skills`).",
+    "PROJECT CONTEXT: if a .kaneo/context.md file exists in the working repo, read it first and follow its language, board mapping, project stack, and templates. Focused workflows live in this package's kaneo-* skills (setup, create, document, review, move, done, search, standup, sprint, close-sprint) — install with `npx @sadamdi/kaneo-mcp skills`.",
   ].join("\n");
 }
 
