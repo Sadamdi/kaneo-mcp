@@ -1,118 +1,182 @@
 ---
 name: kaneo-create
-description: Create a new, well-formed Kaneo task — title, description with acceptance criteria, label, priority, assignee, and links to related tasks — in one flow. Use when the user wants to add a task/card/ticket to a Kaneo board.
+description: Create a complete new task in Kaneo — title, description, label, priority, assignee, and due date — all in one flow. Use when the user wants to add a task/card/ticket to a board.
 ---
 
 # /kaneo-create — Create a New Task in Kaneo
 
-Create a complete task: title, description, label, priority, assignee, and links to related work —
-all in one flow. Grounded (never invents IDs or facts) and written in the team's board language.
+Skill for creating a complete new task: title, description, label, priority, and assignee — all in
+one flow.
 
-## Before you start
-- Read `.kaneo/context.md` first if it exists (board map, language, project stack). If it doesn't,
-  suggest `/kaneo-setup`.
-- Follow `_shared/grounding.md` (discovery-first, search-before-create, verify-after-write).
-- Write card content in the team's board language (`_shared/language.md`).
+> **Before you start (grounding):** read `.kaneo/context.md` first if it exists (board map,
+> language, project stack; else suggest `/kaneo-setup`). Discover real IDs, never hardcode. Write
+> card content in the team's board language (`_shared/language.md`). See `_shared/grounding.md`.
 
-## Step 1: Pick the project
+## Workflow
+
+### Step 1: Pick the Project
 
 ```
 mcp__kaneo__list_projects
 ```
 
-Show the projects and ask **"Which project should this task go in?"** (or take it from
-`.kaneo/context.md`'s board map / the user's request).
+Show the project list and ask the user: **"Which project should this task go in?"**
 
-## Step 2: Gather what you need for the questions
+### Step 2: Collect All the Info at Once
+
+Once the project is picked, fetch the data needed for the questions:
 
 ```
 mcp__kaneo__list_workspace_labels
 mcp__kaneo__get_project { "id": "<projectId>" }
 ```
 
-## Step 3: Ask everything in one message
+Then ask the user in **one message**, everything at once:
 
-If the user already gave the details, skip the questions and proceed.
+---
 
-> **New task details:**
-> 1. **Title** — verb-first, e.g. "Add refresh-token rotation"
-> 2. **Description / acceptance criteria** — what does "done" mean?
+> **Fill in the new task details:**
+>
+> 1. **Title** — what's the task called?
+> 2. **Description** — (optional) details or acceptance criteria
 > 3. **Priority** — `low` / `medium` / `high` / `urgent`
-> 4. **Assignee** — who works on it? (from members: [show member names])
-> 5. **Labels** — pick from [show existing labels], or name new ones, or leave empty
-> 6. **Due date** — (optional) ISO `YYYY-MM-DD`
+> 4. **Assign to** — who works on it? (from members: [show member names])
+> 5. **Label** — pick an existing one: [show existing labels], name a new one, or leave empty
+> 6. **Due date** — (optional) format: `YYYY-MM-DD`
 
-## Step 4: Search for duplicates AND related tasks (grounding)
+---
 
-```
-mcp__kaneo__search { "query": "<key words from the title>" }
-```
+If the user already gave all the info in their first message, skip the questions and proceed.
 
-- If a task with the same intent already exists -> update it instead (tell the user, offer
-  `/kaneo-move` or an `update_task`), don't create a duplicate.
-- Note any **related/integrated** tasks — you'll link them in Step 8.
+**Also (grounding):** before creating, search for a duplicate or a related task —
+`mcp__kaneo__search { "query": "<key words from the title>" }`. If a matching task exists, update it
+instead of duplicating. Note any related task to link in Step 5.
 
-## Step 5: Draft a proper description
+### Step 3: Create a New Label (if requested)
 
-Pick the template that matches the project type (from `.kaneo/context.md` / `_shared/project-detection.md`)
-in `_shared/templates.md`, and obey the **format contract** there (GFM tables, fenced code for
-formulas/schemas, `###` headings, blank lines between blocks, no raw HTML or stray glyphs). If the
-user's acceptance criteria are vague, propose a concrete draft with `- [ ]` checkboxes.
-
-## Step 6: Create labels if new
-
-Pick a sensible hex color (see `_shared/conventions.md`):
+If the user wants a new label that doesn't exist yet:
 
 ```
-mcp__kaneo__create_label { "name": "backend", "color": "#22c55e" }
+mcp__kaneo__create_label {
+  "name": "<label-name>",
+  "color": "<hex-color>"
+}
 ```
 
-| Label | Color | | Label | Color |
-|---|---|---|---|---|
-| `bug` / `security` | `#ef4444` | | `backend` | `#22c55e` |
-| `feature` | `#3b82f6` | | `frontend` | `#f97316` |
-| `docs` | `#eab308` | | `mobile` | `#06b6d4` |
-| `design` | `#a855f7` | | `infra` | `#6b7280` |
-| `chore` / `refactor` | `#94a3b8` | | `data` | `#8b5cf6` |
+Pick a sensible color based on the label name:
+- `bug` / `error` → red `#ef4444`
+- `feature` / `enhancement` → blue `#3b82f6`
+- `docs` / `documentation` → yellow `#eab308`
+- `design` / `ui` → purple `#a855f7`
+- `backend` / `api` → green `#22c55e`
+- `frontend` → orange `#f97316`
+- other labels → gray `#6b7280`
 
-## Step 7: Create the task
+### Step 4: Write a Proper Description (enhancement)
+
+Don't leave the description as a one-liner. Pick the template that matches the project type (from
+`.kaneo/context.md` / `_shared/project-detection.md`) in `_shared/templates.md` and follow the
+**format contract** there:
+- Kaneo renders markdown — put a blank line between blocks.
+- Tables → GFM tables; formulas/schemas/code → fenced code blocks; steps → numbered lists;
+  acceptance criteria → `- [ ]` checkboxes; sections → `###` headings.
+- No raw HTML, no stray Word glyphs.
+For a documentation-grade card verified against code, use `/kaneo-document` instead.
+
+### Step 5: Create the Task
 
 ```
 mcp__kaneo__create_task {
   "projectId": "<id>",
   "title": "<title>",
-  "description": "<markdown body>",
-  "status": "to-do",
-  "priority": "medium"
+  "description": "<description>",
+  "status": "to-do"
 }
 ```
 
-## Step 8: Attach labels, assignee, due date, and relations
+### Step 6: Set All the Attributes (in parallel where possible)
 
-```
-mcp__kaneo__attach_label_to_task { "labelId": "<id>", "taskId": "<newId>" }
-mcp__kaneo__set_task_assignee { "id": "<newId>", "userId": "<userId>" }
-mcp__kaneo__set_task_due_date { "id": "<newId>", "dueDate": "2026-12-31" }
-```
+Run these after the task is created, using the task `id` from the response:
 
-`userId` comes from `mcp__kaneo__list_workspace_members`. **Link related tasks** found in Step 4:
-
+**Priority:**
 ```
-mcp__kaneo__create_task_relation { "sourceTaskId": "<newId>", "targetTaskId": "<relatedId>", "relationType": "relates_to" }
+mcp__kaneo__set_task_priority {
+  "id": "<id>",
+  "priority": "<low|medium|high|urgent>"
+}
 ```
 
-Use `blocks` / `blocked_by` for dependencies, `relates_to` for integrations, `duplicates` if it
-supersedes another.
+**Assignee:**
+```
+mcp__kaneo__set_task_assignee {
+  "id": "<id>",
+  "userId": "<user-id>"
+}
+```
 
-## Step 9: Verify and log
+**Label:**
+```
+mcp__kaneo__attach_label_to_task {
+  "taskId": "<id>",
+  "labelId": "<label-id>"
+}
+```
+
+**Due date (if any):**
+```
+mcp__kaneo__set_task_due_date {
+  "id": "<id>",
+  "dueDate": "YYYY-MM-DD"
+}
+```
+
+**Link a related task (enhancement)** — if Step 2 found related/integrated work:
+```
+mcp__kaneo__create_task_relation {
+  "sourceTaskId": "<id>",
+  "targetTaskId": "<related-id>",
+  "relationType": "relates_to"
+}
+```
+(`blocks` / `blocked_by` for dependencies, `relates_to` for integrations, `duplicates` to supersede.)
+
+### Step 7: Confirm to the User
+
+Read the task back (`mcp__kaneo__get_task { "id": "<id>" }`) to verify, then show a full summary of
+the new task:
 
 ```
-mcp__kaneo__get_task { "id": "<newId>" }
+✅ Task created!
+
+📋 [Task Title]
+   Project  : [Project Name]
+   Priority : 🔴 urgent / 🟠 high / 🟡 medium / ⚪ low
+   Assign   : @[assignee name]
+   Label    : [label name]
+   Due      : [date] (if any)
+   ID       : [task-id]
 ```
 
-Confirm the real id + status back to the user. Append one line to the `.kaneo/context.md` Activity
-log (`_shared/context-memory.md`).
+Append one line to the `.kaneo/context.md` Activity log (`_shared/context-memory.md`).
+
+---
 
 ## Example prompts
-> "buatkan task untuk implementasi refresh-token rotation di Backoffice"
-> "add a task in E-Commerce: fix cart total off-by-one, high priority, assign to Imam"
+
+> "create a new task in E-Commerce"
+> *(the AI asks for all the details in one message)*
+
+> "create a task: implement the checkout page, priority high, assign to Imam, label frontend"
+
+> "add a task in Simpan Pinjam: build the loan application form, urgent, assign to me, new label: 'MVP'"
+
+---
+
+## Tips
+
+- If the user says "assign to me" — take the user ID from the member data already loaded in Step 2.
+- If the label doesn't exist in the workspace yet, create it before attaching.
+- If the user doesn't mention a priority, default to `medium`.
+- If the user doesn't mention an assignee, leave it unassigned — don't guess.
+- Always show the task ID in the final confirmation (useful for `/kaneo-move` and `/kaneo-done`).
+- Grounding: search before creating, don't invent IDs, and verify the task after creating it.

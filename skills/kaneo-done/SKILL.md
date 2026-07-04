@@ -1,59 +1,90 @@
 ---
 name: kaneo-done
-description: Mark one or more Kaneo tasks as done, with an evidence-based check that their acceptance criteria are actually met. Use when the user finished work and wants to close a task.
+description: Quickly mark one or more Kaneo tasks as done, with a check that their acceptance criteria are met. Use when the user finished work and wants to close a task.
 ---
 
-# /kaneo-done — Mark Task(s) Done (evidence-based)
+# /kaneo-done — Mark Task(s) Done
 
-Close tasks quickly, but verify they're really done before flipping the status.
+Skill for quickly marking one or more tasks as `done`.
 
-## When to use
+## When to Use
+
 - Finished something and want to update the status.
-- Mark several tasks at once.
-- After a PR merged / a feature shipped.
+- Want to mark several tasks at once.
+- After a PR is merged / a feature finishes deploying.
 
-## Step 1: Find the task
-If the user named a title:
+## Workflow
+
+### If the User Names a Task Title
+
+Find the intended task:
 ```
-mcp__kaneo__search { "query": "<key words>" }
+mcp__kaneo__search { "query": "<key words from the title>" }
 ```
-Show the match and confirm **"Is this the one?"**. If they named a project:
+
+Show the result and confirm: **"Is this the task you meant?"**
+
+### If the User Names a Project
+
 ```
 mcp__kaneo__list_tasks { "projectId": "<id>" }
 ```
-Show `in-progress` / `in-review` tasks and let them pick.
 
-## Step 2: Evidence check (grounding)
+Show the tasks that are `in-progress` or `in-review` and ask the user which are done.
+
+### Evidence Check (enhancement)
+
+Before flipping the status, read the task and verify it's really done:
 ```
 mcp__kaneo__get_task { "id": "<id>" }
 ```
-Read the acceptance criteria in the description. Verify each is actually met (code merged? tests
-pass? endpoint live?). If some are unmet, **warn the user** and ask whether to proceed anyway. If a
-task is `in-review`, confirm the review is approved before `done`.
+Check the acceptance criteria in the description — are they met (code merged? tests pass? endpoint
+live?)? If some are unmet, warn the user and ask whether to proceed. If a task is `in-review`,
+confirm the review is approved first.
 
-## Step 3: Mark done
-One task:
+### Mark Done — One Task
+
 ```
-mcp__kaneo__set_task_status { "id": "<id>", "status": "done" }
-```
-Several at once:
-```
-mcp__kaneo__bulk_update_tasks { "taskIds": ["<id1>", "<id2>"], "operation": "status", "value": "done" }
+mcp__kaneo__set_task_status {
+  "id": "<id>",
+  "status": "done"
+}
 ```
 
-## Step 4: Closing note + log
-Add a completion comment (what shipped, PR/commit ref):
+### Mark Done — Several Tasks at Once
+
+```
+mcp__kaneo__bulk_update_tasks {
+  "taskIds": ["<id1>", "<id2>", "<id3>"],
+  "operation": "status",
+  "value": "done"
+}
+```
+
+### Confirm
+
+> ✅ **[N] task(s) marked done:**
+> - [task title 1]
+> - [task title 2]
+
+Add a closing comment (what shipped, PR/commit ref) and append to the `.kaneo/context.md` Activity
+log:
 ```
 mcp__kaneo__add_comment { "taskId": "<id>", "content": "Done: <what shipped>, PR <url>" }
 ```
-Append to the `.kaneo/context.md` Activity log.
-
-## Confirm
-> **[N] task(s) marked done:**
-> - [title 1]
-> - [title 2]
 
 ## Example prompts
-> "tandai task 'implementasi checkout' selesai"
-> "semua task in-review di E-Commerce sudah beres"
+
+> "mark the task 'implement checkout' as done"
+
+> "all in-review tasks in E-Commerce are finished"
+
 > "done: update API docs"
+
+> "mark done task [ID]"
+
+## Tips
+
+- If a task is `in-review` → ask first whether the review is approved, then mark `done`.
+- If the user says "all done" without specifics, ask which project first.
+- After done, offer to add a closing comment (`mcp__kaneo__add_comment`).

@@ -1,70 +1,134 @@
 ---
 name: kaneo-close-sprint
-description: Close a Kaneo sprint — review results, move unfinished tasks back to the backlog (never delete by default), and clean up only with explicit confirmation. Use when a sprint ends.
+description: Close a Kaneo sprint — review results, move unfinished tasks back to the backlog, and clean up tasks only with explicit confirmation. Use when a sprint ends.
 ---
 
-# /kaneo-close-sprint — Close a Sprint & Tidy Up
+# /kaneo-close-sprint — Close a Sprint & Clean Up Tasks
 
-## Warning
-This skill can **permanently delete tasks**. Always confirm before `delete_task`. There is no undo.
-Default to MOVING unfinished tasks back to `to-do`, not deleting.
+Skill for closing a sprint: review the results, move unfinished tasks back to the backlog, and
+delete tasks that are no longer relevant.
 
-## Step 1: Review the sprint
+## ⚠️ Warning
+
+This skill can **permanently delete tasks**. Always confirm with the user before running
+`delete_task`. There is no undo.
+
+---
+
+## Workflow
+
+### Step 1: Review the Sprint to Close
+
+Get all tasks in the project:
 ```
 mcp__kaneo__export_tasks { "projectId": "<id>" }
 ```
+
+Analyze the sprint result:
 ```python
 import json
 from collections import Counter
-data = json.load(open('<path>'))
-tasks = json.loads(data[0]['text']).get('tasks', [])
-print(Counter(t.get('status') for t in tasks))
+
+with open('<filepath>') as f:
+    data = json.load(f)
+inner = json.loads(data[0]['text'])
+tasks = inner.get('tasks', [])
+
+statuses = Counter(t.get('status') for t in tasks)
+print("Sprint result:")
+for status, count in statuses.items():
+    print(f"  {status}: {count} tasks")
 ```
 
-## Step 2: Summary
+### Step 2: Show the Sprint Summary
+
 ```
-# Sprint Summary — [Project]
-Done       : X  -> keep
-In Progress: X  -> unfinished
-In Review  : X  -> unfinished
-To Do      : X  -> not started
-Velocity: X of Y done (XX%)
+# 📊 Sprint Summary — [Project Name]
+
+✅ Done       : X tasks  → will be kept
+🔄 In Progress: X tasks  → unfinished
+🟡 In Review  : X tasks  → unfinished
+⚪ To Do      : X tasks  → not worked on
+
+Sprint Velocity: X of Y tasks done (XX%)
 ```
 
-## Step 3: Ask what to do per group
-- **`in-progress` / `in-review`**: "Move to backlog (`to-do`), carry to next sprint (keep
-  `in-progress`), or delete?"
-- **`to-do` not worked**: "Keep in backlog, or delete any?"
+### Step 3: Ask What to Do Per Status
 
-## Step 4: Execute
-Move to backlog (default, safe):
+Ask the user for each group of non-`done` tasks:
+
+**`in-progress` and `in-review` tasks:**
+> "There are X unfinished tasks. Move them to the backlog (`to-do`), carry them to the next sprint
+> (keep `in-progress`), or delete them?"
+
+**`to-do` tasks that weren't worked on:**
+> "There are Y to-do tasks that didn't make this sprint. Keep them in the backlog, or delete any?"
+
+### Step 4: Execute the User's Decision
+
+**Move to the backlog:**
 ```
-mcp__kaneo__bulk_update_tasks { "taskIds": ["<id1>", "<id2>"], "operation": "status", "value": "to-do" }
+mcp__kaneo__bulk_update_tasks {
+  "taskIds": ["<id1>", "<id2>"],
+  "operation": "status",
+  "value": "to-do"
+}
 ```
-Delete (CONFIRM FIRST — no undo). Show the list:
+
+**Delete tasks (CONFIRM FIRST — no undo):**
+
+Show the list of tasks to delete:
 ```
-Will permanently delete:
-- [id] Title 1
-- [id] Title 2
-Type "YA HAPUS" to confirm, or "batal" to cancel.
+Will be permanently deleted:
+- [ID] Task title 1
+- [ID] Task title 2
+
+Type "YA HAPUS" to confirm, or "cancel" to abort.
 ```
-After explicit confirmation, delete one by one:
+
+After the user confirms with a clear keyword, delete one by one:
 ```
 mcp__kaneo__delete_task { "id": "<id>" }
 ```
 
-## Step 5: Closing report
-```
-# Sprint Closed — [Project]
-- Done: X · Carried over: X · Back to backlog: X · Deleted: X
-Backlog now: X tasks
-```
-Append to the `.kaneo/context.md` Activity log. Offer `/kaneo-sprint` for the next one.
+### Step 5: Sprint Closing Report
 
-## Delete rule
-Never delete without explicit confirmation showing title + current status + a specific keyword
-(not just "yes"). If the user hesitates, recommend moving to backlog instead.
+```
+# ✅ Sprint Closed — [Project Name]
+
+## Final Result
+- Done: X tasks
+- Carried to next sprint: X tasks
+- Returned to backlog: X tasks
+- Deleted: X tasks
+
+## Carried-Over Tasks
+- [task title] — @assignee
+
+## Backlog Now
+Total: X tasks remaining
+```
+
+Append to the `.kaneo/context.md` Activity log. Offer to start the next sprint:
+> "Want to plan the next sprint right away? Run `/kaneo-sprint`"
+
+---
 
 ## Example prompts
-> "tutup sprint E-Commerce"
-> "sprint selesai, pindah semua yang belum done ke backlog"
+
+> "close the E-Commerce sprint"
+
+> "close sprint, delete all the tasks that weren't worked on"
+
+> "sprint is over, move everything not done back to the backlog"
+
+---
+
+## Task Deletion Rule
+
+Never delete a task without explicit confirmation. At minimum show:
+1. The title of the task to delete
+2. Its current status
+3. A specific confirmation keyword (not just "yes")
+
+If the user hesitates, recommend moving to the backlog first rather than deleting.

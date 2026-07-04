@@ -1,66 +1,105 @@
 ---
 name: kaneo-review
-description: Review and analyze Kaneo tasks for a project or across all projects, grouped by status, with health checks (WIP limits, stale tasks, unassigned, missing acceptance criteria). Use when the user wants to see board status or an overview.
+description: Review and analyze Kaneo tasks for one project or across all projects, grouped by status, with insights and health checks. Use when the user wants a board overview or status review.
 ---
 
 # /kaneo-review — Review Tasks in Kaneo
 
-Review and analyze tasks for a project (or all projects), grouped by status, with health insights.
+Skill for reviewing and analyzing tasks in a Kaneo project.
 
-## Step 1: Decide the scope
-Ask (or infer): review **one project** or **all**? Filter a status (`to-do` / `in-progress` /
-`in-review` / `done`), or all? Read `.kaneo/context.md` for the board map first.
+> **Grounding:** read `.kaneo/context.md` first for the board map; discover real IDs. See
+> `_shared/grounding.md`.
 
-## Step 2: Get the data
-Discovery first:
+## Workflow
+
+### Step 1: Determine the Review Scope
+
+Ask the user (or infer from the request):
+- Review **one project** or **all projects**?
+- Filter to a specific status? (`in-progress`, `to-do`, `in-review`, `done`, or all)
+
+### Step 2: Get the Data
+
+**One project:**
 ```
 mcp__kaneo__list_projects
 ```
-One project (quick): `mcp__kaneo__list_tasks { "projectId": "<id>" }`.
-Full detail (descriptions): `mcp__kaneo__export_tasks { "projectId": "<id>" }` — large; analyse
-with the Python recipe in `_shared/tools-reference.md`, don't paste raw.
+Pick the relevant project, then:
+```
+mcp__kaneo__export_tasks { "projectId": "<id>" }
+```
 
-## Step 3: Analyze (Python for big exports)
+**All projects:**
+Run `list_projects`, then `export_tasks` for each project.
+
+### Step 3: Analyze the Data
+
+For large responses saved to a file, use Python:
+
 ```python
 import json
 from collections import Counter
-data = json.load(open('<saved-output-file>'))
+
+with open('<file-path>') as f:
+    data = json.load(f)
 inner = json.loads(data[0]['text'])
 tasks = inner.get('tasks', inner)
+
+# Group by status
 by_status = {}
 for t in tasks:
-    by_status.setdefault(t.get('status', 'unknown'), []).append(t)
-print(Counter(t.get('status') for t in tasks))
+    s = t.get('status', 'unknown')
+    by_status.setdefault(s, []).append(t)
+
+for status, items in by_status.items():
+    print(f"\n=== {status.upper()} ({len(items)}) ===")
+    for t in items:
+        print(f"  [{t.get('id','')}] {t.get('title','')}")
 ```
 
-## Step 4: Present
+### Step 4: Present the Result
+
+A good output format:
+
 ```
-## Review: [Project Name]  — total: XX
+## Review: [Project Name]
+Total tasks: XX
 
-### In Progress (N)
-- [id] Title — @assignee
+### 🔴 In Progress (N)
+- [ID] Task title
 
-### In Review (N)
-- [id] Title — @assignee
+### 🟡 In Review (N)
+- [ID] Task title
 
-### To Do (N)
-### Done (N)
+### ⚪ To Do (N)
+- [ID] Task title
+
+### ✅ Done (N)
+- [ID] Task title
 ```
 
-## Step 5: Health checks + insight
-Flag issues (don't change anything without asking):
-- **WIP limit**: anyone with **>3** `in-progress` tasks.
-- **Stale**: `in-progress` **>7 days** with no update (check `updatedAt`).
-- **Unassigned** `in-progress` / `in-review` tasks.
-- Cards **missing acceptance criteria** in their description.
-- No `in-review` at all -> the review step may be unused.
-Suggest concrete fixes (reassign, split, nudge, add criteria).
+### Step 5: Insight & Recommendations (optional — enhancement)
 
-## Extras
-- Spec task: `mcp__kaneo__get_task { "id": "<id>" }`.
-- Comments: `mcp__kaneo__list_comments { "taskId": "<id>" }`.
+If asked, or if you spot anomalies, give health-check insights:
+- Too many `in-progress` tasks (WIP limit: warn if one person has **>3**) → re-prioritize.
+- No `in-review` tasks → the review flow may be unused.
+- Many `to-do` tasks without an assignee → they need assignment.
+- Tasks `in-progress` **>7 days** with no update (check `updatedAt`) → stale, needs a nudge.
+- Cards missing acceptance criteria in their description.
 
 ## Example prompts
-> "review semua task in-progress"
-> "berapa task per status di Simpan Pinjam?"
+
+> "review all in-progress tasks"
+
+> "show tasks in E-Commerce, filter to unfinished ones"
+
+> "how many tasks per status in Simpan Pinjam?"
+
 > "review all projects — which has the most in-progress?"
+
+## Tips
+
+- For a quick single-project review, `list_tasks` is more efficient than `export_tasks`.
+- For a review with full descriptions, use `export_tasks`.
+- To review a specific task: `mcp__kaneo__get_task { "id": "..." }`.
+- To see comments: `mcp__kaneo__list_comments { "taskId": "..." }`.

@@ -1,67 +1,124 @@
 ---
 name: kaneo-sprint
-description: Plan a sprint/iteration in Kaneo — pick priority tasks from the backlog, balance team capacity, set assignees and due dates, and record the sprint goal. Use for sprint planning.
+description: Sprint/iteration planning in Kaneo — prioritize backlog tasks, assign, set due dates, and balance team capacity. Use for sprint planning.
 ---
 
-# /kaneo-sprint — Sprint Planning
+# /kaneo-sprint — Sprint Planning in Kaneo
 
-## When to use
-- Start of a sprint/week.
-- Choosing what to work on this cycle.
-- Distributing tasks evenly across the team.
+Skill to help plan a sprint/iteration: prioritize tasks, assign, set due dates, and review team
+capacity.
 
-## Step 1: Review the backlog
+## When to Use
+
+- Start of a sprint / new week.
+- Choosing which tasks to work on this week.
+- Distributing tasks evenly across team members.
+
+## Workflow
+
+### Step 1: Review the Backlog
+
+Get all `to-do` tasks in the project:
 ```
 mcp__kaneo__export_tasks { "projectId": "<id>" }
 ```
-Filter `to-do` and show by priority:
+
+Filter `to-do` tasks and show them to the user:
 ```python
 import json
-data = json.load(open('<path>'))
-tasks = json.loads(data[0]['text']).get('tasks', [])
+
+with open('<filepath>') as f:
+    data = json.load(f)
+inner = json.loads(data[0]['text'])
+tasks = inner.get('tasks', [])
+
 backlog = [t for t in tasks if t.get('status') == 'to-do']
+print(f"Backlog: {len(backlog)} tasks")
 for t in backlog:
-    who = (t.get('assignee') or {}).get('name', 'Unassigned')
-    print(f"[{t.get('priority','none')}] {t['title']} — {who}")
+    priority = t.get('priority', 'none')
+    assignee = t.get('assignee', {}).get('name', 'Unassigned') if t.get('assignee') else 'Unassigned'
+    print(f"  [{priority}] {t['title']} — {assignee}")
 ```
 
-## Step 2: Ask the sprint goal
-- **How many tasks can we take?** (team capacity)
-- **Any must-have high-priority tasks?**
-- **Sprint length / end date?**
+### Step 2: Ask the Sprint Goal
 
-## Step 3: Recommend the sprint set
-Pick by: priority (`urgent` -> `high` -> `medium` -> `low`), then already-assigned, then related
-tasks that can go in parallel (check `list_task_relations`). Cap **3-5 tasks per person**. Confirm:
-**"These tasks for the sprint — agreed?"**
+Ask the user:
+- **How many tasks can we take this sprint?** (team capacity)
+- **Any high-priority tasks that must be in the sprint?**
+- **How many days / until what date is the sprint?**
 
-## Step 4: Set up each chosen task
+### Step 3: Pick the Sprint Tasks
+
+Recommend tasks based on:
+1. Priority (`urgent` → `high` → `medium` → `low`)
+2. Tasks that already have an assignee
+3. Related tasks that can be worked in parallel (check `mcp__kaneo__list_task_relations`)
+
+Confirm with the user: **"These tasks for this sprint — agreed?"**
+
+### Step 4: Set Up the Sprint Tasks
+
+For each chosen task, set:
+
+**Move to in-progress (if starting right away):**
 ```
-mcp__kaneo__set_task_status   { "id": "<id>", "status": "in-progress" }
-mcp__kaneo__set_task_due_date { "id": "<id>", "dueDate": "<sprint-end>" }
-mcp__kaneo__set_task_assignee { "id": "<id>", "userId": "<userId>" }
+mcp__kaneo__set_task_status {
+  "id": "<id>",
+  "status": "in-progress"
+}
 ```
+
+**Set the due date to the sprint end:**
+```
+mcp__kaneo__set_task_due_date {
+  "id": "<id>",
+  "dueDate": "<sprint-end-date>"
+}
+```
+
+**Assign if not yet assigned:**
+```
+mcp__kaneo__set_task_assignee {
+  "id": "<id>",
+  "userId": "<user-id>"
+}
+```
+
 Record the sprint goal as a comment on the chosen tasks:
 ```
-mcp__kaneo__add_comment { "taskId": "<id>", "content": "Sprint <n> goal: <goal>" }
+mcp__kaneo__add_comment { "taskId": "<id>", "content": "Sprint goal: <goal>" }
 ```
 
-## Step 5: Sprint plan report
+### Step 5: Sprint Plan Report
+
 ```
-# Sprint Plan — [start] to [end]  · Project: [name]  · capacity: X
+# 🚀 Sprint Plan — [Start Date] to [End Date]
+## Project: [Project Name]
+
+Total capacity: X tasks
 
 | # | Task | Priority | Assignee | Due |
 |---|------|----------|----------|-----|
-| 1 | Checkout | high | @Imam | 10 Jul |
+| 1 | Implement checkout | high | @Imam | 10 Jul |
+| 2 | Update API docs | medium | @Budi | 10 Jul |
+| 3 | Fix login bug | urgent | @Imam | 8 Jul |
 
-Backlog left: Y tasks
+**Backlog remaining:** Y tasks (not in this sprint)
 ```
+
 Append the selection to the `.kaneo/context.md` Activity log.
 
-## Tips
-- Don't pull last sprint's `in-progress` — focus on fresh backlog.
-- No due date given -> default to 7 days out.
-
 ## Example prompts
-> "planning sprint minggu ini untuk E-Commerce"
-> "pilih 5 task prioritas tertinggi dari backlog Simpan Pinjam"
+
+> "help me plan this week's sprint for E-Commerce"
+
+> "pick the 5 highest-priority tasks from the Simpan Pinjam backlog for this sprint"
+
+> "sprint planning for all projects, due 11 July"
+
+## Tips
+
+- Don't pull last sprint's `in-progress` tasks — focus on fresh backlog.
+- Recommend at most 3-5 tasks per person per sprint.
+- If no due date is given, default to 7 days from today.
+- After planning, offer to run `/kaneo-standup` on day one of the sprint.

@@ -1,53 +1,90 @@
 ---
 name: kaneo-search
-description: Find Kaneo tasks by keyword, status, assignee, or label across one or all projects. Use when the user wants to locate tasks.
+description: Search Kaneo tasks by keyword, status, assignee, or other criteria across all projects. Use when the user wants to find tasks.
 ---
 
-# /kaneo-search — Find Tasks Across Projects
+# /kaneo-search — Find Tasks Across All Projects
 
-## Quick search (by keyword)
+Skill for finding tasks by keyword, status, assignee, or other criteria.
+
+## Workflow
+
+### Quick Search (by keyword)
+
 ```
 mcp__kaneo__search { "query": "<keywords>" }
 ```
-Searches tasks/projects/comments full-text. Show results with: title, project, status, assignee.
 
-## Filter by status across all projects
-1. `mcp__kaneo__list_projects`
-2. `mcp__kaneo__export_tasks { "projectId": "<id>" }` per project, then filter:
+Show results with: title, project, status, assignee.
+
+### Search by Status Across All Projects
+
+If the user wants all tasks with a certain status (e.g. everything `in-review`):
+
+1. Get all projects:
+   ```
+   mcp__kaneo__list_projects
+   ```
+
+2. Export tasks per project, then filter:
+   ```python
+   import json
+
+   def search_by_status(filepath, target_status):
+       with open(filepath) as f:
+           data = json.load(f)
+       inner = json.loads(data[0]['text'])
+       tasks = inner.get('tasks', [])
+       return [t for t in tasks if t.get('status') == target_status]
+   ```
+
+### Search by Assignee
+
+If the user wants to see all their tasks:
+1. Get the user ID from `mcp__kaneo__list_workspace_members`.
+2. Export tasks and filter by `assignee.id`:
+
 ```python
-import json
-def by_status(path, target):
-    data = json.load(open(path))
-    tasks = json.loads(data[0]['text']).get('tasks', [])
-    return [t for t in tasks if t.get('status') == target]
+def search_by_assignee(filepath, user_id):
+    with open(filepath) as f:
+        data = json.load(f)
+    inner = json.loads(data[0]['text'])
+    tasks = inner.get('tasks', [])
+    return [
+        t for t in tasks
+        if t.get('assignee') and t['assignee'].get('id') == user_id
+    ]
 ```
 
-## Filter by assignee
-Get the userId from `mcp__kaneo__list_workspace_members`, then:
-```python
-def by_assignee(path, user_id):
-    data = json.load(open(path))
-    tasks = json.loads(data[0]['text']).get('tasks', [])
-    return [t for t in tasks if t.get('assignee') and t['assignee'].get('id') == user_id]
-```
+### Format the Results
 
-## Present (grouped by project)
 ```
-## Results: "[query]"  — X found
+## Search Results: "[query]"
+Found X tasks
 
 ### E-Commerce
-- [in-progress] Checkout page — @Imam
+- [in-progress] Implement checkout page — @Imam
 - [in-review] Update API docs — @Budi
 
 ### Simpan Pinjam
 - [to-do] Loan application form — Unassigned
 ```
 
-## Tips
-- `search` is best for keywords; `export_tasks` + Python is more precise for status/assignee/label.
-- If too many results, ask the user to narrow it.
-
 ## Example prompts
-> "cari task tentang checkout"
-> "tampilkan semua task yang di-assign ke saya"
+
+> "find tasks related to checkout"
+
+> "show all tasks assigned to me"
+
+> "find in-review tasks across all projects"
+
+> "is there a task about 'documentation' anywhere?"
+
 > "which tasks have no assignee?"
+
+## Tips
+
+- `mcp__kaneo__search` is full-text — great for keywords.
+- To filter by status/assignee, `export_tasks` + Python is more precise.
+- Show results grouped by project for readability.
+- If there are too many results, ask the user to narrow the filter.
