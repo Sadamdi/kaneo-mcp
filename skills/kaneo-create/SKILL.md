@@ -137,10 +137,10 @@ mcp__kaneo__set_task_due_date {
 mcp__kaneo__create_task_relation {
   "sourceTaskId": "<id>",
   "targetTaskId": "<related-id>",
-  "relationType": "relates_to"
+  "relationType": "related"
 }
 ```
-(`blocks` / `blocked_by` for dependencies, `relates_to` for integrations, `duplicates` to supersede.)
+(Valid values: `blocks` for dependencies, `related` for integrations, `subtask` for parent-child.)
 
 ### Step 7: Confirm to the User
 

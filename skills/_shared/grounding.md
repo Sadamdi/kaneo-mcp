@@ -38,9 +38,9 @@ file). If you cannot verify it, write `TBD (verify)` instead of inventing someth
 looks right. A card that documents a fake endpoint is worse than a card that admits a gap.
 
 ## 6. Link related tasks
-When a new task depends on, blocks, duplicates, or integrates with an existing one, link them with
-`create_task_relation { sourceTaskId, targetTaskId, relationType }` (`blocks` / `blocked_by` /
-`relates_to` / `duplicates`). Discover candidates with `search` on shared keywords first. This keeps
+When a new task depends on, blocks, or integrates with an existing one, link them with
+`create_task_relation { sourceTaskId, targetTaskId, relationType }` — valid values: `blocks` /
+`related` / `subtask`. Discover candidates with `search` on shared keywords first. This keeps
 integrated work connected instead of siloed.
 
 ## 7. Confirm before destructive or bulk actions

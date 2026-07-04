@@ -39,7 +39,7 @@ bare names; in most clients they appear as `mcp__kaneo__<name>`. Params marked `
 | Tool | Params | Notes |
 |------|--------|-------|
 | `list_task_relations` | `{taskId}` | Dependencies/links for a task |
-| `create_task_relation` | `{sourceTaskId, targetTaskId, relationType}` | relationType e.g. `blocks`/`blocked_by`/`relates_to`/`duplicates` |
+| `create_task_relation` | `{sourceTaskId, targetTaskId, relationType}` | relationType: `blocks` / `related` / `subtask` (verified against live API) |
 | `delete_task_relation` | `{id}` | Destructive — confirm |
 | `list_workflow_rules` | `{projectId}` | Automation rules for a board |
 | `upsert_workflow_rule` | `{projectId, integrationType, eventType, columnId}` | Event → move to column |

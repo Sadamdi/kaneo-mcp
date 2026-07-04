@@ -11,11 +11,11 @@ export const relationTools: ToolDef[] = [
   },
   {
     name: "create_task_relation",
-    description: "Link two tasks with a relation, e.g. relationType 'blocks', 'blocked_by', 'relates_to', or 'duplicates'.",
+    description: "Link two tasks with a relation. relationType must be 'blocks', 'related', or 'subtask'.",
     schema: {
       sourceTaskId: z.string(),
       targetTaskId: z.string(),
-      relationType: z.string().describe("e.g. 'blocks', 'blocked_by', 'relates_to', 'duplicates'"),
+      relationType: z.enum(["blocks", "related", "subtask"]),
     },
     handler: async (body: { sourceTaskId: string; targetTaskId: string; relationType: string }) =>
       kaneo.post("/task-relation", body),
