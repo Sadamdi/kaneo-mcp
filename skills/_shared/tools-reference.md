@@ -1,4 +1,4 @@
-# Tools Reference — all 102 Kaneo MCP tools
+# Tools Reference — all 103 Kaneo MCP tools
 
 Every tool the `@sadamdi/kaneo-mcp` server exposes, grouped by domain. Tool names below are the
 bare names; in most clients they appear as `mcp__kaneo__<name>`. Params marked `?` are optional.
@@ -60,8 +60,13 @@ bare names; in most clients they appear as `mcp__kaneo__<name>`. Params marked `
 ## Notifications (9)
 `list_notifications` · `create_notification {type, title?, message?, eventData?, relatedEntityId?, relatedEntityType?}` · `mark_notification_read {id}` · `mark_all_notifications_read` · `clear_all_notifications` · `get_notification_preferences` · `update_notification_preferences {emailEnabled?, ntfyEnabled?, gotifyEnabled?, webhookEnabled?, …}` · `upsert_workspace_notification_rule {workspaceId?, isActive, emailEnabled, ntfyEnabled, gotifyEnabled, webhookEnabled, projectMode, selectedProjectIds?}` · `delete_workspace_notification_rule {workspaceId?}`.
 
-## Search & instance (3)
-`search {query, workspaceId?}` (tasks/projects/comments) · `get_config` (instance flags — good health check) · `get_instance_status` (has users/admin).
+## Search & instance (4)
+| Tool | Params | Notes |
+|------|--------|-------|
+| `search` | `{query, workspaceId?}` | Fast backend full-text search over title+description only (tasks/projects/comments). Unknown filter params are silently ignored by the API — this tool does NOT filter by status/priority/assignee/label. |
+| `search_advanced` | `{workspaceId?, query?, titleOnly?, projectId?, status?, priority?, assigneeId?, assigneeName?, labelName?, dueBefore?, dueAfter?, sortBy?, limit?}` | Real client-side filtering: status/priority/assignee/label/due-date + title-only matching + sorting. Pass `projectId` for a fast single-call, full-fidelity search (labels+assignee included free). Omit it to search the whole workspace — uses fast full-text search when only `query`/`status`/`priority` are set, or scans every project's task list (one call each) when filtering by `assigneeId`/`assigneeName`/`labelName`. Returns a `descriptionSnippet` (~200 chars) per result, not the full body — call `get_task` for that. |
+| `get_config` | — | Instance flags — good health check |
+| `get_instance_status` | — | Has users/admin |
 
 ## Assets (1)
 `get_asset {id}` — fetch an uploaded attachment.

@@ -4,7 +4,7 @@ For every AI agent (Claude, Cursor, Copilot, Codex, Gemini, …) working with Ka
 
 ## Context
 Kaneo is a team project-management board. The `@sadamdi/kaneo-mcp` server gives full access to the
-Kaneo API — **102 tools** for projects, tasks, comments, labels, time tracking, notifications,
+Kaneo API — **103 tools** for projects, tasks, comments, labels, time tracking, notifications,
 workspaces/members, task relations, workflow rules, and integrations. It's a **shared team board**,
 so correctness matters — never guess or invent.
 
@@ -99,7 +99,7 @@ mcp__kaneo__delete_task { id }     -> CONFIRM FIRST
 mcp__kaneo__add_comment { taskId, content }
 mcp__kaneo__list_comments { taskId }
 ```
-Full reference of all 102 tools: `skills/_shared/tools-reference.md`.
+Full reference of all 103 tools: `skills/_shared/tools-reference.md`.
 
 ## Status & priority values
 Status: `to-do` -> `in-progress` -> `in-review` -> `done` (some boards add extra columns — check
