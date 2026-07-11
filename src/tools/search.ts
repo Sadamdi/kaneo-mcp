@@ -49,6 +49,8 @@ interface AdvancedResult {
   createdAt?: string;
   relevanceScore?: number;
   descriptionSnippet?: string;
+  relations?: { id: string; relationType: string; taskId: string; title?: string }[];
+  matchedComment?: { id: string; snippet: string };
 }
 
 const PRIORITY_RANK: Record<string, number> = {
@@ -75,6 +77,32 @@ async function listAllProjectIds(workspaceId: string): Promise<{ id: string; nam
   return (Array.isArray(projects) ? projects : []).map((p) => ({ id: p.id, name: p.name, slug: p.slug }));
 }
 
+async function fetchTaskRelations(taskId: string): Promise<{ id: string; relationType: string; taskId: string; title?: string }[]> {
+  try {
+    const raw = (await kaneo.get<any>(`/task-relation/${taskId}`)) as any;
+    const list = Array.isArray(raw) ? raw : raw?.data ?? [];
+    return list.map((r: any) => {
+      const otherId = r.sourceTaskId === taskId ? r.targetTaskId : r.sourceTaskId;
+      const other = r.sourceTaskId === taskId ? r.targetTask : r.sourceTask;
+      return { id: r.id, relationType: r.relationType, taskId: otherId, title: other?.title };
+    });
+  } catch {
+    return [];
+  }
+}
+
+async function findMatchingComment(taskId: string, query: string): Promise<{ id: string; snippet: string } | undefined> {
+  try {
+    const raw = (await kaneo.get<any>(`/comment/${taskId}`)) as any;
+    const list = Array.isArray(raw) ? raw : raw?.data ?? [];
+    const q = query.toLowerCase();
+    const hit = list.find((c: any) => c.content?.toLowerCase().includes(q));
+    return hit ? { id: hit.id, snippet: snippet(hit.content, 200)! } : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 async function fetchProjectTasks(projectId: string): Promise<{ project: { id: string; name: string; slug: string }; tasks: RawTask[] }> {
   const res = await kaneo.get<any>(`/task/tasks/${projectId}`);
   const data = res?.data ?? res;
@@ -88,7 +116,7 @@ export const searchTools: ToolDef[] = [
   {
     name: "search",
     description:
-      "Fast full-text search across tasks, projects, and comments within a workspace (backend FTS over title+description only — no status/assignee/label filtering; unknown query params are silently ignored by the API). Use this for a quick lookup by keyword. For status/priority/assignee/label filters, cross-project scans, or title-only matching, use search_advanced instead.",
+      "Fast full-text search across tasks and projects within a workspace (backend FTS over title+description only — verified: comment content is NOT indexed despite the name, and unknown query params are silently ignored by the API). Use this for a quick lookup by keyword. For status/priority/assignee/label filters, cross-project scans, title-only matching, linked-task context, or a comment-content check, use search_advanced instead.",
     schema: { query: z.string(), workspaceId: z.string().optional() },
     handler: async ({ query, workspaceId }: { query: string; workspaceId?: string }) =>
       kaneo.get("/search", { q: query, workspaceId: resolveWorkspaceId(workspaceId) }),
@@ -99,7 +127,8 @@ export const searchTools: ToolDef[] = [
       "Filtered task search with real status/priority/assignee/label/due-date filters and sorting — the plain `search` tool's API only does full-text over title+description and ignores every other param, so use this whenever you need to narrow results by anything else. " +
       "Fast path (single API call): pass `projectId` to scope to one board — the project's task list already includes labels and assignee, so all filters apply with no extra calls. " +
       "Cross-project path: omit `projectId` to search the whole workspace. If you only filter by `query`/`status`/`priority` this uses the fast backend full-text search (1 call) then filters client-side. If you filter by `assigneeId`/`assigneeName`/`labelName` with no `projectId`, this scans every project's task list (one call per project — slower on large workspaces, but still typically fast for a handful of boards). " +
-      "`query` matches title+description by default (substring, case-insensitive); set `titleOnly: true` to match the title only. Results include a `descriptionSnippet` (first ~200 chars) instead of the full body to keep output compact — call get_task for the full description.",
+      "`query` matches title+description by default (substring, case-insensitive); set `titleOnly: true` to match the title only. Results include a `descriptionSnippet` (first ~200 chars) instead of the full body to keep output compact — call get_task for the full description. " +
+      "Set `includeRelations: true` to attach each result's linked tasks (blocks/related/subtask, with titles) for dependency context — one extra call per returned result, bounded by `limit`. Set `includeComments: true` (with `query`) to also check each already-returned result's comments for the query text and attach the first match as `matchedComment` — comments are not indexed by the backend at all, so this only enriches results already found via title/description/filters, it does not surface tasks whose only match is buried in a comment.",
     schema: {
       workspaceId: z.string().optional().describe("Defaults to KANEO_WORKSPACE_ID if not set."),
       query: z.string().optional().describe("Free-text term/phrase. Matches title+description unless titleOnly is set."),
@@ -114,6 +143,8 @@ export const searchTools: ToolDef[] = [
       dueAfter: z.string().optional().describe("ISO date — only tasks with dueDate on/after this."),
       sortBy: z.enum(["relevance", "createdAt", "dueDate", "priority"]).optional().describe("Default: relevance if query given, else createdAt desc."),
       limit: z.number().optional().describe("Max results to return. Default 50."),
+      includeRelations: z.boolean().optional().describe("Attach each returned task's linked tasks (blocks/related/subtask + their titles) via one extra call per returned result. Bounded by `limit` — cheap for small result sets, costly for large ones."),
+      includeComments: z.boolean().optional().describe("For each already-returned result, also check its comments for `query` and attach the first match as `matchedComment` (one extra call per returned result, bounded by `limit`). Does NOT expand which tasks match — comment text is not indexed by the backend, so a task whose only match is in a comment won't appear as a result at all; this only enriches results already found some other way (e.g. title/description match, or no query at all)."),
     },
     handler: async (args: {
       workspaceId?: string;
@@ -129,6 +160,8 @@ export const searchTools: ToolDef[] = [
       dueAfter?: string;
       sortBy?: string;
       limit?: number;
+      includeRelations?: boolean;
+      includeComments?: boolean;
     }) => {
       const workspaceId = resolveWorkspaceId(args.workspaceId);
       const limit = args.limit ?? 50;
@@ -270,13 +303,22 @@ export const searchTools: ToolDef[] = [
       });
 
       const truncated = results.length > limit;
+      const page = results.slice(0, limit);
+
+      if (args.includeRelations) {
+        await Promise.all(page.map(async (r) => { r.relations = await fetchTaskRelations(r.id); }));
+      }
+      if (args.includeComments && args.query) {
+        await Promise.all(page.map(async (r) => { r.matchedComment = await findMatchingComment(r.id, args.query!); }));
+      }
+
       return {
         count: results.length,
-        returned: Math.min(results.length, limit),
+        returned: page.length,
         truncated,
         searchMode: scanned.mode,
         projectsScanned: scanned.projects,
-        results: results.slice(0, limit),
+        results: page,
       };
     },
   },
